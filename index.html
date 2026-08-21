@@ -49,12 +49,12 @@
   #kyukaShell .lbl{font-size:12px;font-weight:700;color:#55524b}
   #kyukaShell .hint{font-size:11.5px;color:#8a857b;line-height:1.7}
   #kyukaShell .ctl{padding:10px 11px;border:1px solid #cfcbc2;border-radius:6px;font-size:14px;background:#fff}
-  .btn-main{flex:1;padding:11px 0;border:none;border-radius:7px;background:#14524b;color:#fff;font-size:14px;font-weight:700;cursor:pointer}
-  .btn-main:hover{background:#0d3833}
-  .btn-sub{padding:11px 14px;border:1px solid #14524b;border-radius:7px;background:#fff;color:#14524b;font-size:13px;font-weight:700;cursor:pointer}
-  .btn-sub:hover{background:#eef3f2}
+  .btn-main{flex:1;padding:11px 0;border:none;border-radius:7px;background:#2f80b8;color:#fff;font-size:14px;font-weight:700;cursor:pointer}
+  .btn-main:hover{background:#256a99}
+  .btn-sub{padding:11px 14px;border:1px solid #2f80b8;border-radius:7px;background:#fff;color:#2f80b8;font-size:13px;font-weight:700;cursor:pointer}
+  .btn-sub:hover{background:#eaf3fa}
   .seg{padding:12px 6px;border-radius:6px;font-size:13px;font-weight:700;cursor:pointer;border:1px solid #cfcbc2;background:#fff;color:#55524b}
-  .seg.on{border-color:#14524b;background:#14524b;color:#fff}
+  .seg.on{border-color:#2f80b8;background:#2f80b8;color:#fff}
   .err{background:#fdecec;border:1px solid #e6a5a5;color:#a12b2b;font-size:12px;font-weight:700;padding:8px 10px;border-radius:6px}
   .hitem{display:flex;align-items:center;gap:8px;border:1px solid #e2dfd8;border-radius:6px;padding:9px 10px;background:#fbfaf8}
   .hitem button.load{flex:1;text-align:left;border:none;background:none;padding:0;cursor:pointer;color:#1c1c1b}
@@ -201,7 +201,7 @@
   <div id="kyukaShell" class="shell">
     <div class="panel" data-noprint>
       <div class="phead">
-        <div style="font-size:13px;font-weight:700;color:#14524b">休暇案内 作成ツール</div>
+        <div style="font-size:13px;font-weight:700;color:#2f80b8">休暇案内 作成ツール</div>
         <div style="display:flex;gap:8px;margin-top:10px">
           <button class="btn-main" id="kBtnPrint">印刷 / PDF</button>
           <button class="btn-sub" id="btnSave">履歴に保存</button>
@@ -209,6 +209,14 @@
         <div class="hint" style="margin-top:10px">住所・TEL・FAX・所長名は自動で入ります<br><span id="officeInfo"></span></div>
       </div>
       <div class="pbody">
+        <div class="fld">
+          <label class="lbl" for="fIssued">発行日</label>
+          <div style="display:flex;gap:6px">
+            <input class="ctl" style="flex:1" type="date" id="fIssued">
+            <button class="btn-kichi" id="btnIssuedKichi" title="○○月吉日 表記に切り替え">吉日</button>
+          </div>
+        </div>
+
         <div class="fld">
           <label class="lbl">① 宛先の種類</label>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
@@ -239,31 +247,19 @@
         </div>
 
         <div class="fld">
-          <label class="lbl" for="fResume">④ 営業開始日（休み明け）</label>
-          <input class="ctl" type="date" id="fResume">
-          <div class="hint">終了日を入れると翌日が自動で入ります</div>
-        </div>
-
-        <div class="fld">
-          <label class="lbl" for="fStaff">⑤ 緊急時の担当者（営業所ごとに記憶）</label>
+          <label class="lbl" for="fStaff">④ 担当者・連絡先（営業所ごとに記憶）</label>
           <input class="ctl" type="text" id="fStaff" placeholder="担当者名（例：山下 厚）">
           <input class="ctl" type="text" id="fMobile" placeholder="携帯番号（例：090-1234-5678）">
         </div>
 
         <div class="fld">
-          <label class="lbl" for="fFont">⑥ 案内文の書体（20種類）</label>
-          <select class="ctl" id="fFont"></select>
-          <div id="fontPreview" style="border:1px solid #e8e5df;border-radius:6px;padding:10px 12px;font-size:15px">拝啓　平素は格別のお引き立てを賜り</div>
-        </div>
-
-        <div class="fld">
-          <label class="lbl" for="fIssued">⑦ 発行日</label>
-          <input class="ctl" type="date" id="fIssued">
-        </div>
-
-        <div class="fld">
-          <label class="lbl" for="fNote">⑧ 追記（任意）</label>
+          <label class="lbl" for="fNote">⑤ 追記（任意）</label>
           <textarea class="ctl" id="fNote" rows="3" style="font-size:13.5px;resize:vertical" placeholder="例：期間中のご納品依頼は8月8日までにお願いいたします。"></textarea>
+        </div>
+
+        <div class="fld" style="flex-direction:row;align-items:center;gap:8px">
+          <label class="lbl" for="fFont" style="font-weight:400;color:#a5a09a;font-size:11px">書式</label>
+          <select class="ctl" id="fFont" style="flex:1;padding:6px 9px;font-size:12px;color:#8a857b"></select>
         </div>
 
         <div style="border-top:1px solid #e8e5df;padding-top:16px;display:flex;flex-direction:column;gap:9px">
@@ -533,13 +529,83 @@ function esc(s) {
 
 var state = {
   officeIdx: 0, kind: "OBON", audience: "care",
-  start: "", end: "", resume: "", staff: "", mobile: "",
-  issued: iso(new Date()), note: "", fitStep: 0,
+  start: "", end: "", staff: "", mobile: "",
+  issued: iso(new Date()), issuedKichi: false, note: "", fitStep: 0,
   fontCss: FONTS[0].css, history: [], staffMap: {}
 };
 
+function fmtKichi(s) {
+  var d = parse(s);
+  if (!d) return "　　年　　月吉日";
+  return d.getFullYear() + "年" + (d.getMonth() + 1) + "月吉日";
+}
+
 function leadDays() {
   return DEFAULT_LEAD;
+}
+
+/* ---------- 日本の祝日（固定日＋ハッピーマンデー＋振替休日＋国民の休日） ---------- */
+function nthMonday(year, month, n) {
+  var d = new Date(year, month - 1, 1);
+  var offset = (8 - d.getDay()) % 7;
+  return new Date(year, month - 1, 1 + offset + (n - 1) * 7);
+}
+function shunbun(year) {
+  return Math.floor(20.8431 + 0.242194 * (year - 1980) - Math.floor((year - 1980) / 4));
+}
+function shubun(year) {
+  return Math.floor(23.2488 + 0.242194 * (year - 1980) - Math.floor((year - 1980) / 4));
+}
+function jpHolidaysForYear(year) {
+  var list = [];
+  function add(m, d, name) { list.push({ date: new Date(year, m - 1, d), name: name }); }
+  add(1, 1, "元日");
+  list.push({ date: nthMonday(year, 1, 2), name: "成人の日" });
+  add(2, 11, "建国記念の日");
+  if (year >= 2020) add(2, 23, "天皇誕生日");
+  add(3, shunbun(year), "春分の日");
+  add(4, 29, "昭和の日");
+  add(5, 3, "憲法記念日");
+  add(5, 4, "みどりの日");
+  add(5, 5, "こどもの日");
+  list.push({ date: nthMonday(year, 7, 3), name: "海の日" });
+  if (year >= 2016) add(8, 11, "山の日");
+  list.push({ date: nthMonday(year, 9, 3), name: "敬老の日" });
+  add(9, shubun(year), "秋分の日");
+  list.push({ date: nthMonday(year, 10, 2), name: "スポーツの日" });
+  add(11, 3, "文化の日");
+  add(11, 23, "勤労感謝の日");
+  return list;
+}
+var _holidayCache = {};
+function holidayMapForYear(year) {
+  if (_holidayCache[year]) return _holidayCache[year];
+  var base = jpHolidaysForYear(year);
+  var map = {};
+  base.forEach(function (h) { map[iso(h.date)] = h.name; });
+  base.forEach(function (h) {
+    if (h.date.getDay() === 0) {
+      var d = new Date(h.date.getTime());
+      do { d.setDate(d.getDate() + 1); } while (map[iso(d)]);
+      map[iso(d)] = "振替休日";
+    }
+  });
+  var start = new Date(year, 0, 1), end = new Date(year, 11, 31);
+  var d = new Date(start.getTime());
+  while (d <= end) {
+    var key = iso(d);
+    if (!map[key] && d.getDay() !== 0) {
+      var prev = new Date(d.getTime()); prev.setDate(prev.getDate() - 1);
+      var next = new Date(d.getTime()); next.setDate(next.getDate() + 1);
+      if (map[iso(prev)] && map[iso(next)]) map[key] = "国民の休日";
+    }
+    d.setDate(d.getDate() + 1);
+  }
+  _holidayCache[year] = map;
+  return map;
+}
+function jpHolidayName(d) {
+  return holidayMapForYear(d.getFullYear())[iso(d)] || "";
 }
 
 function isClosed(d, startISO, endISO) {
@@ -550,6 +616,7 @@ function isClosed(d, startISO, endISO) {
 function isBiz(d, startISO, endISO) {
   var w = d.getDay();
   if (w === 0 || w === 6) return false;
+  if (jpHolidayName(d)) return false;
   return !isClosed(d, startISO, endISO);
 }
 function stepBiz(fromISO, n, startISO, endISO) {
@@ -591,45 +658,37 @@ function writeHistory(list) {
   try { localStorage.setItem(HKEY, JSON.stringify(list)); } catch (e) {}
 }
 
-var SHORT = { "発注締切": "締切", "お届け": "納品", "営業開始": "開始", "休業": "休", "休業開始": "休", "休業最終日": "休" };
-
-function buildMonths(marks, f) {
+/* 休業日の前後1週間だけを、大きな週間グリッドで見せる（月全体は表示しない）。
+   実際の休業期間が未入力の場合は、休暇の種類の目安日程（fallbackStartISO/EndISO）だけで
+   色付けなしのプレビューを組み立てる。 */
+function buildCalendarWindow(marks, f, fallbackStartISO, fallbackEndISO) {
   var keys = Object.keys(marks);
-  if (!keys.length) return [];
-  var dates = keys.map(parse).filter(Boolean).sort(function (a, b) { return a - b; });
-  if (!dates.length) return [];
-  var first = dates[0], last = dates[dates.length - 1];
-  var months = [];
-  var y = first.getFullYear(), m = first.getMonth(), guard = 0;
-  while (guard < 4 && (y < last.getFullYear() || (y === last.getFullYear() && m <= last.getMonth()))) {
-    months.push([y, m]);
-    m++; if (m > 11) { m = 0; y++; }
-    guard++;
+  var first, last;
+  if (keys.length) {
+    var dates = keys.map(parse).filter(Boolean).sort(function (a, b) { return a - b; });
+    first = dates[0]; last = dates[dates.length - 1];
+  } else if (fallbackStartISO && fallbackEndISO) {
+    first = parse(fallbackStartISO); last = parse(fallbackEndISO);
   }
-  var two = months.length > 1;
-  var tf = Math.max(0.8, f);
-  var opt = two
-    ? { cellMm: 8.6 * f, basis: "0",    numFs: (9.6 * tf).toFixed(1) + "pt",  tagFs: (6.7 * tf).toFixed(1) + "pt", short: true,  gridFs: (9.0 * tf).toFixed(1) + "pt" }
-    : { cellMm: 9.6 * f, basis: "100%", numFs: (11.0 * tf).toFixed(1) + "pt", tagFs: (7.2 * tf).toFixed(1) + "pt", short: false, gridFs: (10.0 * tf).toFixed(1) + "pt" };
-  return months.map(function (ym) { return buildMonth(ym[0], ym[1], marks, opt); });
-}
+  if (!first || !last) return null;
 
-function buildMonth(year, month, marks, opt) {
-  var firstCol = (new Date(year, month, 1).getDay() + 6) % 7;
-  var dim = new Date(year, month + 1, 0).getDate();
-  var prevDim = new Date(year, month, 0).getDate();
-  var rows = Math.ceil((firstCol + dim) / 7);
+  var rangeStart = new Date(first.getTime()); rangeStart.setDate(rangeStart.getDate() - 7);
+  var rangeEnd = new Date(last.getTime()); rangeEnd.setDate(rangeEnd.getDate() + 7);
+  var startCol = (rangeStart.getDay() + 6) % 7; rangeStart.setDate(rangeStart.getDate() - startCol);
+  var endCol = (rangeEnd.getDay() + 6) % 7; rangeEnd.setDate(rangeEnd.getDate() + (6 - endCol));
+  var totalDays = Math.round((rangeEnd - rangeStart) / 86400000) + 1;
+
+  var tf = Math.max(0.8, f);
+  var cellMm = 15.5 * f;
+  var numFs = (14.5 * tf).toFixed(1) + "pt";
+  var tagFs = (8.8 * tf).toFixed(1) + "pt";
+  var gridFs = (10.5 * tf).toFixed(1) + "pt";
+
   var cells = [];
-  for (var i = 0; i < rows * 7; i++) {
+  var d = new Date(rangeStart.getTime());
+  for (var i = 0; i < totalDays; i++) {
     var col = i % 7;
-    var dayNum = i - firstCol + 1;
-    if (dayNum < 1 || dayNum > dim) {
-      var outNum = dayNum < 1 ? prevDim + dayNum : dayNum - dim;
-      cells.push({ num: String(outNum), tag: "", bg: "#f4f3f0", fg: "#c3c0ba", tagColor: "transparent",
-                   weight: "400", border: "0.4pt solid #dcdad4", slash: "none" });
-      continue;
-    }
-    var key = iso(new Date(year, month, dayNum));
+    var key = iso(d);
     var mark = marks[key];
     var bg = "#ffffff";
     var fg = col === 6 ? "#c0392b" : col === 5 ? "#2f6fbf" : "#232320";
@@ -637,22 +696,32 @@ function buildMonth(year, month, marks, opt) {
     var border = "0.4pt solid #d8d5cd", slash = "none";
     if (mark) {
       bg = mark.bg; tagColor = mark.color; weight = "700";
-      tag = opt.short ? (SHORT[mark.tag] || mark.tag) : mark.tag;
+      tag = mark.tag;
       if (mark.fg) fg = mark.fg;
       if (mark.closed) {
-        border = "0.5pt solid #c4664c";
-        slash = "repeating-linear-gradient(135deg, rgba(168,58,34,0.22) 0 2.4px, rgba(168,58,34,0) 2.4px 7px)";
+        border = "0.6pt solid #c4664c";
+        slash = "repeating-linear-gradient(135deg, rgba(168,58,34,0.22) 0 2.6px, rgba(168,58,34,0) 2.6px 7.5px)";
       }
-      if (mark.strong) border = "1.3pt solid " + mark.color;
+      if (mark.strong) border = "1.4pt solid " + mark.color;
+    } else {
+      var holidayName = jpHolidayName(d);
+      if (holidayName) { fg = "#c0392b"; tag = "祝"; tagColor = "#c0392b"; }
     }
-    cells.push({ num: String(dayNum), tag: tag, bg: bg, fg: fg, tagColor: tagColor,
-                 weight: weight, border: border, slash: slash });
+    var label = d.getDate() === 1 ? (d.getMonth() + 1) + "/" + d.getDate() : String(d.getDate());
+    cells.push({ label: label, tag: tag, bg: bg, fg: fg, tagColor: tagColor, weight: weight, border: border, slash: slash });
+    d.setDate(d.getDate() + 1);
   }
+
   return {
-    year: year + "年", month: (month + 1) + "月",
-    cellH: opt.cellMm.toFixed(2) + "mm", basis: opt.basis,
-    numFs: opt.numFs, tagFs: opt.tagFs, gridFs: opt.gridFs, cells: cells
+    cellH: cellMm.toFixed(2) + "mm", numFs: numFs, tagFs: tagFs, gridFs: gridFs, cells: cells,
+    rangeLabel: fmtRangeLabel(rangeStart, rangeEnd)
   };
+}
+function fmtRangeLabel(s, e) {
+  var sameY = s.getFullYear() === e.getFullYear();
+  var a = s.getFullYear() + "年" + (s.getMonth() + 1) + "月" + s.getDate() + "日";
+  var b = (sameY ? "" : e.getFullYear() + "年") + (e.getMonth() + 1) + "月" + e.getDate() + "日";
+  return a + " 〜 " + b;
 }
 
 var WEEKDAYS = [
@@ -668,15 +737,16 @@ function compute() {
   var lead = leadDays();
 
   var startISO = state.start, endISO = state.end;
-  var resumeISO = state.resume || (endISO ? nextBizOnOrAfter(shift(endISO, 1), startISO, endISO) : "");
-  var lastDelivery = startISO ? prevBizOnOrBefore(shift(startISO, -1), startISO, endISO) : "";
+  var hasPeriod = !!(startISO && endISO);
+  var resumeISO = hasPeriod ? nextBizOnOrAfter(shift(endISO, 1), startISO, endISO) : "";
+  var lastDelivery = hasPeriod ? prevBizOnOrBefore(shift(startISO, -1), startISO, endISO) : "";
   var deadline = lastDelivery ? stepBiz(lastDelivery, -lead, startISO, endISO) : "";
   var firstDelivery = resumeISO ? stepBiz(resumeISO, lead, startISO, endISO) : "";
 
-  var periodText = startISO && endISO ? fmt(startISO) + " 〜 " + fmtShort(endISO) : "　　月　　日 〜 　　月　　日";
+  var periodText = hasPeriod ? fmt(startISO) + " 〜 " + fmtShort(endISO) : "　　月　　日 〜 　　月　　日";
 
   var marks = {};
-  if (startISO && endISO) {
+  if (hasPeriod) {
     var s = parse(startISO), e = parse(endISO);
     if (s && e && s <= e) {
       var d = new Date(s.getTime()), guard = 0;
@@ -685,17 +755,23 @@ function compute() {
         d.setDate(d.getDate() + 1); guard++;
       }
     }
+    if (!care && lastDelivery)  marks[lastDelivery]  = { tag: "お届け",   bg: "#e6f0e8", color: "#2f7a4a", fg: "#245c39", strong: true };
+    if (!care && firstDelivery) marks[firstDelivery] = { tag: "お届け",   bg: "#e6f0e8", color: "#2f7a4a", fg: "#245c39", strong: true };
+    if (!care && deadline)      marks[deadline]      = { tag: "発注締切", bg: "#e8ecf7", color: "#3c5bb5", fg: "#33499a", strong: true };
+    if (startISO && marks[startISO]) marks[startISO] = { tag: "休業開始", bg: "#f0bcac", color: "#8f2f1c", fg: "#7a2614", closed: true, strong: true };
+    if (endISO && marks[endISO] && endISO !== startISO) marks[endISO] = { tag: "休業最終日", bg: "#f0bcac", color: "#8f2f1c", fg: "#7a2614", closed: true, strong: true };
+    if (resumeISO) marks[resumeISO] = { tag: "営業開始", bg: "#dcefe0", color: "#1f6b3c", fg: "#17542e", strong: true };
   }
-  if (!care && lastDelivery)  marks[lastDelivery]  = { tag: "お届け",   bg: "#e6f0e8", color: "#2f7a4a", fg: "#245c39", strong: true };
-  if (!care && firstDelivery) marks[firstDelivery] = { tag: "お届け",   bg: "#e6f0e8", color: "#2f7a4a", fg: "#245c39", strong: true };
-  if (!care && deadline)      marks[deadline]      = { tag: "発注締切", bg: "#e8ecf7", color: "#3c5bb5", fg: "#33499a", strong: true };
-  if (startISO && marks[startISO]) marks[startISO] = { tag: "休業開始", bg: "#f0bcac", color: "#8f2f1c", fg: "#7a2614", closed: true, strong: true };
-  if (endISO && marks[endISO] && endISO !== startISO) marks[endISO] = { tag: "休業最終日", bg: "#f0bcac", color: "#8f2f1c", fg: "#7a2614", closed: true, strong: true };
-  if (resumeISO) marks[resumeISO] = { tag: "営業開始", bg: "#dcefe0", color: "#1f6b3c", fg: "#17542e", strong: true };
 
   var f = Math.max(0.58, 1 - 0.055 * (state.fitStep || 0));
   var mm = function (v) { return (v * f).toFixed(2) + "mm"; };
-  var months = startISO && endISO ? buildMonths(marks, f) : [];
+
+  var refRange = null;
+  if (!hasPeriod) {
+    var baseYear = (parse(state.issued) || new Date()).getFullYear();
+    refRange = kindDefaultRange(state.kind, baseYear);
+  }
+  var cal = buildCalendarWindow(marks, f, refRange && refRange.start, refRange && refRange.end);
 
   var greet = "拝啓　" + kind.greet + "、";
   var bodyCare = greet + "平素は格別のお引き立てを賜り、厚く御礼申し上げます。さて、弊社" + office.name +
@@ -703,20 +779,22 @@ function compute() {
   var bodyHosp = greet + "平素は格別のお引き立てを賜り、厚く御礼申し上げます。さて、弊社" + office.name +
     "では、下記の期間を" + kind.body + "休業とさせていただきます。福祉用具のご発注につきましては、お届けまでに通常" + lead +
     "営業日を頂戴しております。休業前のお届けをご希望の場合は、" + (deadline ? fmtShort(deadline) : "休業前") +
-    "までにご発注をお願いいたします。退院日・入所日のご予定に合わせ、お早めのご連絡をお願い申し上げます。";
+    "（休暇前最終発注日）までにご発注をお願いいたします。" + (deadline ? fmtShort(deadline) : "上記の日") +
+    "以降のご注文につきましては、休業明け（" + (firstDelivery ? fmtShort(firstDelivery) : "営業開始後") +
+    "以降）のお届けとなりますので、あらかじめご了承ください。退院日・入所日のご予定に合わせ、お早めのご連絡をお願い申し上げます。";
 
-  var legend = care
+  var legend = !hasPeriod ? [] : (care
     ? [{ label: "休業日（受付を休止します）", bg: "#f7ddd4", border: "#c4664c" },
        { label: "営業開始日（通常業務再開）", bg: "#dcefe0", border: "#1f6b3c" }]
-    : [{ label: "休業日",       bg: "#f7ddd4", border: "#c4664c" },
-       { label: "営業開始日",   bg: "#dcefe0", border: "#1f6b3c" },
-       { label: "発注締切日",   bg: "#e8ecf7", border: "#3c5bb5" },
-       { label: "お届け日",     bg: "#e6f0e8", border: "#2f7a4a" }];
+    : [{ label: "休業日",           bg: "#f7ddd4", border: "#c4664c" },
+       { label: "営業開始日",       bg: "#dcefe0", border: "#1f6b3c" },
+       { label: "休暇前最終発注日", bg: "#e8ecf7", border: "#3c5bb5" },
+       { label: "お届け日",         bg: "#e6f0e8", border: "#2f7a4a" }]);
 
   var sD = parse(startISO), eD = parse(endISO);
 
   return {
-    office: office, kind: kind, care: care, lead: lead,
+    office: office, kind: kind, care: care, lead: lead, hasPeriod: hasPeriod,
     startISO: startISO, endISO: endISO, resumeISO: resumeISO,
     lastDelivery: lastDelivery, deadline: deadline, firstDelivery: firstDelivery,
     dateError: !!(sD && eD && eD < sD),
@@ -725,48 +803,45 @@ function compute() {
     deadlineText: deadline ? fmt(deadline) : "　　月　　日",
     lastDeliveryText: lastDelivery ? fmt(lastDelivery) : "　　月　　日",
     firstDeliveryText: firstDelivery ? fmt(firstDelivery) : "　　月　　日",
-    issuedText: state.issued ? fmt(state.issued) : "　　　年　　月　　日",
+    issuedText: state.issued ? (state.issuedKichi ? fmtKichi(state.issued) : fmt(state.issued)) : "　　　年　　月　　日",
     addresseeLine: care ? "居宅介護支援事業所　ご担当者様" : "病院・施設　ご担当者様",
     docTitle: kind.title, bodyText: care ? bodyCare : bodyHosp,
-    audienceHint: care ? "休業カレンダー＋緊急連絡の案内が付きます" : "発注リードタイム表と発注→お届けカレンダーが付きます",
-    calTitle: care ? "休業カレンダー（休業期間と通常業務の再開日）"
-                   : "発注 → お届け カレンダー（通常リードタイム：ご発注から" + lead + "営業日）",
-    calHint: care ? "赤い斜線の日が休業日です。緑の枠の日から通常業務を再開いたします。"
-                  : "青の枠＝この日までにご発注ください／緑の枠＝お届けできる日／赤い斜線＝休業日",
-    months: months, legend: legend, hasCalendar: months.length > 0,
+    audienceHint: care ? "休業カレンダー＋緊急連絡の案内が付きます" : "休暇前最終発注日・発注→お届けカレンダーが付きます",
+    calTitle: (care ? "休業カレンダー（休業期間と通常業務の再開日）"
+                    : "発注 → お届け カレンダー（通常リードタイム：ご発注から" + lead + "営業日）")
+              + (hasPeriod ? "" : "（" + kind.label + "の目安・参考）"),
+    calHint: !hasPeriod ? "③ 休業期間を入力すると、この期間が色分け表示されます"
+                  : (care ? "赤い斜線の日が休業日です。緑の枠の日から通常業務を再開いたします。"
+                         : "青の枠＝休暇前最終発注日／緑の枠＝お届けできる日／赤い斜線＝休業日"),
+    cal: cal, legend: legend, hasCalendar: !!cal,
     hasNote: !!(state.note || "").trim(),
     staffText: state.staff || "担当者名",
     mobileText: state.mobile || "090-　　　-　　　",
     needStaff: !state.staff || !state.mobile,
-    calTop: mm(3), calPadTop: mm(2.5), monthsTop: mm(3), monthsGap: mm(3) + " " + mm(4),
+    calTop: mm(3), calPadTop: mm(2.5), calGridTop: mm(3),
     noteTop: mm(4), notePad: mm(3) + " " + mm(4.4),
     noteFs: (9.5 * Math.max(0.76, f)).toFixed(1) + "pt",
     footTop: mm(2.5), footPad: mm(2.4) + " " + mm(5)
   };
 }
 
-function monthHTML(m) {
+function calendarHTML(cal) {
   var head = WEEKDAYS.map(function (w) {
-    return '<div style="height:4.6mm;display:flex;align-items:center;justify-content:center;font-size:' +
-      m.gridFs + ';font-weight:700;color:' + w.color + '">' + w.label + '</div>';
+    return '<div style="height:7mm;display:flex;align-items:center;justify-content:center;font-size:' +
+      cal.gridFs + ';font-weight:700;color:' + w.color + '">' + w.label + '</div>';
   }).join("");
-  var cells = m.cells.map(function (d) {
-    return '<div style="height:' + m.cellH + ';box-sizing:border-box;border:' + d.border +
+  var cells = cal.cells.map(function (d) {
+    return '<div style="height:' + cal.cellH + ';box-sizing:border-box;border:' + d.border +
       ';margin:-0.2pt;background-color:' + d.bg + ';background-image:' + d.slash +
-      ';padding:0.5mm 0.8mm;display:flex;flex-direction:column">' +
-      '<div style="display:flex;align-items:baseline;justify-content:space-between;gap:0.6mm">' +
-      '<div style="font-size:' + m.numFs + ';font-weight:' + d.weight + ';color:' + d.fg + ';line-height:1.05">' + d.num + '</div>' +
-      '<div style="font-size:' + m.tagFs + ';font-weight:700;color:' + d.tagColor +
+      ';padding:1.2mm 1.6mm;display:flex;flex-direction:column">' +
+      '<div style="display:flex;align-items:baseline;justify-content:space-between;gap:1mm">' +
+      '<div style="font-size:' + cal.numFs + ';font-weight:' + d.weight + ';color:' + d.fg + ';line-height:1.05">' + d.label + '</div>' +
+      '<div style="font-size:' + cal.tagFs + ';font-weight:700;color:' + d.tagColor +
       ';text-align:right;line-height:1.1;white-space:nowrap">' + esc(d.tag) + '</div>' +
       '</div></div>';
   }).join("");
-  return '<div style="flex:1 1 ' + m.basis + ';min-width:0;display:flex;flex-direction:column;gap:1.2mm">' +
-    '<div style="display:flex;align-items:baseline;gap:2mm">' +
-    '<div style="font-size:11pt;font-weight:700">' + m.year + '</div>' +
-    '<div style="font-size:11pt;font-weight:700">' + m.month + '</div></div>' +
-    '<div style="display:grid;grid-template-columns:repeat(7,1fr);background:#eeece2;border:0.4pt solid #c9c6ba">' + head + '</div>' +
-    '<div style="margin-top:-0.4pt"><div style="display:grid;grid-template-columns:repeat(7,1fr)">' + cells + '</div></div>' +
-    '</div>';
+  return '<div style="display:grid;grid-template-columns:repeat(7,1fr);background:#eeece2;border:0.4pt solid #c9c6ba">' + head + '</div>' +
+    '<div style="margin-top:-0.4pt"><div style="display:grid;grid-template-columns:repeat(7,1fr)">' + cells + '</div></div>';
 }
 
 function sheetHTML(v) {
@@ -784,14 +859,12 @@ function sheetHTML(v) {
   h += '<div style="margin-top:2mm;text-align:center;font-size:10pt;letter-spacing:.4em">記</div>';
 
   h += '<div style="margin-top:2mm;border:1pt solid #2b2b29;padding:2.4mm 6mm;display:flex;flex-direction:column;gap:1.4mm">';
-  h += '<div style="display:flex;gap:6mm;align-items:baseline"><div style="width:30mm;flex:none;font-weight:600;letter-spacing:.12em">休業期間</div>' +
+  h += '<div style="display:flex;gap:6mm;align-items:baseline"><div style="width:34mm;flex:none;font-weight:600;letter-spacing:.12em">休業期間</div>' +
        '<div style="font-size:11pt;font-weight:600">' + v.periodText + '</div></div>';
-  h += '<div style="display:flex;gap:6mm;align-items:baseline"><div style="width:30mm;flex:none;font-weight:600;letter-spacing:.12em">営業開始日</div>' +
-       '<div style="font-size:11pt;font-weight:600">' + v.resumeText + '</div></div>';
   if (!v.care) {
-    h += '<div style="display:flex;gap:6mm;align-items:baseline"><div style="width:30mm;flex:none;font-weight:600;letter-spacing:.12em">発注締切</div>' +
+    h += '<div style="display:flex;gap:6mm;align-items:baseline"><div style="width:34mm;flex:none;font-weight:600;letter-spacing:.12em">休暇前最終発注日</div>' +
          '<div><span style="font-size:11pt;font-weight:600">' + v.deadlineText + '</span>' +
-         '<span style="font-size:9.5pt">　まで（休業前お届け分）</span></div></div>';
+         '<span style="font-size:9.5pt">　まで（これ以降のご注文は休業明けの納期となります）</span></div></div>';
   }
   h += '</div>';
 
@@ -803,15 +876,15 @@ function sheetHTML(v) {
 
   if (v.hasCalendar) {
     h += '<div style="margin-top:' + v.calTop + ';border-top:0.8pt solid #c9c6be;padding-top:' + v.calPadTop + '">';
-    h += '<div style="font-size:10.5pt;font-weight:700;letter-spacing:.08em">' + esc(v.calTitle) + '</div>';
+    h += '<div style="display:flex;align-items:baseline;justify-content:space-between;gap:4mm">' +
+         '<div style="font-size:10.5pt;font-weight:700;letter-spacing:.08em">' + esc(v.calTitle) + '</div>' +
+         '<div style="font-size:9pt;color:#6f6b63">' + esc(v.cal.rangeLabel) + '</div></div>';
     h += '<div style="margin-top:1mm;font-size:9pt;color:#4a4a46">' + esc(v.calHint) + '</div>';
-    h += '<div style="margin-top:' + v.monthsTop + ';display:flex;flex-wrap:wrap;align-items:flex-start;gap:' + v.monthsGap + '">';
-    h += v.months.map(monthHTML).join("");
-    h += '</div>';
-    h += '<div style="margin-top:2.5mm;display:flex;flex-wrap:wrap;gap:2mm 5mm;font-size:8.5pt">';
+    h += '<div style="margin-top:' + v.calGridTop + '">' + calendarHTML(v.cal) + '</div>';
+    h += '<div style="margin-top:2.8mm;display:flex;flex-wrap:wrap;gap:2mm 6mm;font-size:9pt">';
     h += v.legend.map(function (l) {
-      return '<div style="display:flex;align-items:center;gap:2mm"><span style="width:5mm;height:5mm;background:' +
-        l.bg + ';border:0.6pt solid ' + l.border + ';display:inline-block"></span>' + esc(l.label) + '</div>';
+      return '<div style="display:flex;align-items:center;gap:2.2mm"><span style="width:6mm;height:6mm;background:' +
+        l.bg + ';border:0.7pt solid ' + l.border + ';display:inline-block"></span>' + esc(l.label) + '</div>';
     }).join("");
     h += '</div></div>';
   }
@@ -844,7 +917,6 @@ function syncPanel(v) {
   setVal($("fKind"), state.kind);
   setVal($("fStart"), state.start);
   setVal($("fEnd"), state.end);
-  setVal($("fResume"), v.resumeISO);
   setVal($("fStaff"), state.staff);
   setVal($("fMobile"), state.mobile);
   setVal($("fFont"), state.fontCss);
@@ -856,7 +928,7 @@ function syncPanel(v) {
   $("audienceHint").textContent = v.audienceHint;
   $("officeInfo").textContent = v.office.address + "／TEL " + v.office.tel;
   $("dateError").style.display = v.dateError ? "" : "none";
-  $("fontPreview").style.fontFamily = state.fontCss;
+  $("btnIssuedKichi").classList.toggle("on", !!state.issuedKichi);
 }
 
 function renderHistory() {
@@ -885,9 +957,10 @@ function renderHistory() {
         if (sharedSel) sharedSel.value = String(idx);
       }
       state.kind = entry.kind; state.audience = entry.audience;
-      state.start = entry.start || ""; state.end = entry.end || ""; state.resume = entry.resume || "";
+      state.start = entry.start || ""; state.end = entry.end || "";
       state.staff = entry.staff || ""; state.mobile = entry.mobile || "";
       state.note = entry.note || "";
+      state.issuedKichi = !!entry.issuedKichi;
       state.fontCss = entry.fontCss || state.fontCss;
       render();
     };
@@ -917,7 +990,7 @@ function fit() {
   var el = sheetEl.querySelector(".page");
   if (!el) return;
   var sig = [state.officeIdx, state.kind, state.audience, state.start, state.end,
-             state.resume, state.note, state.fontCss, state.issued].join("|");
+             state.note, state.fontCss, state.issued, state.issuedKichi].join("|");
   if (sig !== lastSig) {
     lastSig = sig;
     if (state.fitStep) { state.fitStep = 0; render(); return; }
@@ -948,29 +1021,13 @@ function init() {
   state.staff = saved.staff || "";
   state.mobile = saved.mobile || "";
 
-  $("fKind").onchange = function (e) {
-    state.kind = e.target.value;
-    if (!state.start && !state.end) {
-      var baseYear = (parse(state.issued) || new Date()).getFullYear();
-      var range = kindDefaultRange(state.kind, baseYear);
-      if (range) {
-        state.start = range.start; state.end = range.end;
-        state.resume = nextBizOnOrAfter(shift(range.end, 1), range.start, range.end);
-      }
-    }
-    render();
-  };
+  $("fKind").onchange = function (e) { state.kind = e.target.value; render(); };
   $("segCare").onclick = function () { state.audience = "care"; render(); };
   $("segHosp").onclick = function () { state.audience = "hospital"; render(); };
   $("fStart").onchange = function (e) { state.start = e.target.value; render(); };
-  $("fEnd").onchange = function (e) {
-    var val = e.target.value;
-    state.end = val;
-    if (val && !state.resume) state.resume = nextBizOnOrAfter(shift(val, 1), state.start, val);
-    render();
-  };
-  $("fResume").onchange = function (e) { state.resume = e.target.value; render(); };
+  $("fEnd").onchange = function (e) { state.end = e.target.value; render(); };
   $("fIssued").onchange = function (e) { state.issued = e.target.value; render(); };
+  $("btnIssuedKichi").onclick = function () { state.issuedKichi = !state.issuedKichi; render(); };
   $("fNote").oninput = function (e) { state.note = e.target.value; render(); };
   $("fFont").onchange = function (e) { state.fontCss = e.target.value; render(); };
   $("fStaff").oninput = function (e) {
@@ -990,9 +1047,9 @@ function init() {
       title: v.office.name + "／" + v.kind.label + "／" + (v.care ? "居宅向け" : "病院・施設向け"),
       sub: v.periodText + "　書体:" + state.fontCss.split(",")[0].replace(/'/g, ""),
       officeName: v.office.name, kind: state.kind, audience: state.audience,
-      start: state.start, end: state.end, resume: v.resumeISO,
+      start: state.start, end: state.end,
       staff: state.staff, mobile: state.mobile, note: state.note,
-      fontCss: state.fontCss, savedAt: Date.now()
+      issuedKichi: state.issuedKichi, fontCss: state.fontCss, savedAt: Date.now()
     };
     writeHistory([entry].concat(state.history).slice(0, 30));
     renderHistory();
