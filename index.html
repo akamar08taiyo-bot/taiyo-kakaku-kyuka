@@ -1,0 +1,1329 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>価格改定・休暇案内 作成ツール｜太陽シルバーサービス株式会社</title>
+<meta name="description" content="価格改定のご案内と休暇案内文を、営業所を選ぶだけでA4 1枚に組み上げて印刷・PDF保存できる社内ツール。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" media="print" onload="this.media='all'" href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Noto+Serif+JP:wght@400;500;600;700&family=M+PLUS+1p:wght@400;500;700&family=M+PLUS+Rounded+1c:wght@400;500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=Zen+Old+Mincho:wght@400;600;700&family=Zen+Maru+Gothic:wght@400;500;700&family=Shippori+Mincho:wght@400;600;700&family=Sawarabi+Gothic&family=Sawarabi+Mincho&family=Kosugi+Maru&family=BIZ+UDPGothic:wght@400;700&family=BIZ+UDPMincho&family=BIZ+UDMincho&family=Klee+One:wght@400;600&family=IBM+Plex+Sans+JP:wght@400;500;700&family=Hina+Mincho&family=Kaisei+Decol&family=Kaisei+Opti&family=Zen+Antique&family=Yuji+Syuku&family=Shippori+Antique&display=swap">
+<script src="https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js"></script>
+<style>
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{display:flex;flex-direction:column;background:#f3f2ef;color:#1c1c1b;
+    font-family:'Noto Sans JP','Yu Gothic UI','Hiragino Kaku Gothic ProN','Meiryo',sans-serif}
+  button,input,select,textarea{font-family:inherit}
+  a{color:#17365c;text-decoration:none}
+  a:hover{color:#0f2440;text-decoration:underline}
+  select:focus,input:focus,textarea:focus{outline:2px solid #7fa4d8;outline-offset:1px}
+  input::placeholder,textarea::placeholder{color:#9aa8bd}
+  [hidden]{display:none!important}
+
+  /* ---------- 共通トップナビ ---------- */
+  #topNav{flex:none;display:flex;align-items:center;gap:22px;flex-wrap:wrap;padding:10px 22px;background:#14203a;color:#fff}
+  .tn-brand{margin-right:6px}
+  .tn-co{font-size:10px;letter-spacing:.14em;color:#aebbd1}
+  .tn-title{font-size:15px;font-weight:700;margin-top:2px}
+  .tn-modes{display:flex;gap:8px}
+  .tn-mode{padding:8px 16px;border-radius:6px;border:1px solid rgba(255,255,255,.35);background:transparent;color:#fff;font-size:13px;font-weight:700;cursor:pointer}
+  .tn-mode:hover{background:rgba(255,255,255,.12)}
+  .tn-mode.on{background:#fff;color:#14203a;border-color:#fff}
+  .tn-mode.on:hover{background:#fff}
+  .tn-office{margin-left:auto;display:flex;align-items:center;gap:8px;font-size:12px;color:#dbe3ef}
+  .tn-office select{padding:7px 10px;border-radius:5px;border:1px solid #3a4a68;background:#1c2c4a;color:#fff;font-size:13px;min-width:170px}
+
+  #appBody{flex:1;min-height:0;display:flex;flex-direction:column}
+
+  #boot{padding:24px;font-size:14px;color:#a12b2b;display:none}
+
+  /* ============================================================
+     休暇案内モード（taiyo-kyuka-annai 由来）
+     ============================================================ */
+  #kyukaShell{flex:1;min-height:0;display:flex}
+  #kyukaShell .panel{width:400px;flex:none;background:#fffffe;border-right:1px solid #dedbd4;overflow:auto}
+  #kyukaShell .phead{padding:20px 22px 16px;border-bottom:1px solid #e8e5df;position:sticky;top:0;background:#fffffe;z-index:2}
+  #kyukaShell .pbody{padding:20px 22px 48px;display:flex;flex-direction:column;gap:20px}
+  #kyukaShell .fld{display:flex;flex-direction:column;gap:7px}
+  #kyukaShell .lbl{font-size:12px;font-weight:700;color:#55524b}
+  #kyukaShell .hint{font-size:11.5px;color:#8a857b;line-height:1.7}
+  #kyukaShell .ctl{padding:10px 11px;border:1px solid #cfcbc2;border-radius:6px;font-size:14px;background:#fff}
+  .btn-main{flex:1;padding:11px 0;border:none;border-radius:7px;background:#14524b;color:#fff;font-size:14px;font-weight:700;cursor:pointer}
+  .btn-main:hover{background:#0d3833}
+  .btn-sub{padding:11px 14px;border:1px solid #14524b;border-radius:7px;background:#fff;color:#14524b;font-size:13px;font-weight:700;cursor:pointer}
+  .btn-sub:hover{background:#eef3f2}
+  .seg{padding:12px 6px;border-radius:6px;font-size:13px;font-weight:700;cursor:pointer;border:1px solid #cfcbc2;background:#fff;color:#55524b}
+  .seg.on{border-color:#14524b;background:#14524b;color:#fff}
+  .err{background:#fdecec;border:1px solid #e6a5a5;color:#a12b2b;font-size:12px;font-weight:700;padding:8px 10px;border-radius:6px}
+  .hitem{display:flex;align-items:center;gap:8px;border:1px solid #e2dfd8;border-radius:6px;padding:9px 10px;background:#fbfaf8}
+  .hitem button.load{flex:1;text-align:left;border:none;background:none;padding:0;cursor:pointer;color:#1c1c1b}
+  .hitem button.del{border:none;background:none;color:#a5a09a;font-size:16px;cursor:pointer;padding:2px 4px}
+
+  .sheetwrap{flex:1;overflow:auto;background:#e9e7e1;padding:24px;display:flex;justify-content:center;align-items:flex-start}
+  .page{width:210mm;height:297mm;flex:none;background:#fff;box-shadow:0 2px 10px rgba(20,20,19,.12);
+    overflow:hidden;padding:10mm 14mm;color:#161615;font-size:9.5pt;line-height:1.52;
+    display:flex;flex-direction:column}
+  .page>*{flex:0 0 auto}
+
+  /* ============================================================
+     価格改定案内モード（taiyo-kakaku-kaitei 由来）
+     ============================================================ */
+  #priceShell{flex:1;min-height:0;overflow:auto}
+  #bar{display:flex;justify-content:center;padding:16px 22px 18px;background:#e7edf6;border-bottom:1px solid #ccd8e8;font-size:13px}
+  #bar > .inner{width:100%;max-width:794px;display:flex;flex-direction:column;gap:13px}
+  #bar .row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  #bar .row.sep{padding-top:12px;border-top:1px solid #cfdaea}
+  #bar .caps{flex:none;font-size:10.5px;font-weight:700;letter-spacing:0.14em;color:#5a6b85}
+  #bar .p-hint{font-size:12px;color:#5a6b85}
+  #bar .spacer{margin-left:auto;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  #bar select,#bar .p-fld input,#bar .p-fld textarea{border:1px solid #b9c8dd;border-radius:3px;background:#fff;color:#16233a;font-family:inherit}
+  #bar select{appearance:none;padding:9px 14px;font-size:13px}
+  #bar select#pFont{min-width:180px}
+  #bar button{font-family:inherit;cursor:pointer;border-radius:3px}
+  .btn-primary{padding:9px 18px;border:1px solid #1f4e79;background:#1f4e79;color:#fff;font-size:12.5px;font-weight:700}
+  .btn-primary:hover{background:#163a5c}
+  .btn-print{padding:9px 18px;border:1px solid #7b98bd;background:#cddef2;color:#17365c;font-size:12.5px;font-weight:700}
+  .btn-print:hover{background:#bcd2ec}
+  .btn-ghost{padding:9px 13px;border:1px solid #b9c8dd;background:#fff;color:#24354f;font-size:12px}
+  .btn-ghost:hover{background:#f2f6fb}
+  .btn-link{padding:7px 11px;border:1px solid transparent;background:transparent;color:#6b7c96;font-size:12px}
+  .btn-link:hover{color:#1c2a3f;border-color:#cfdaea}
+  .btn-mini{padding:5px 12px;border:1px solid #b9c8dd;background:#fff;color:#24354f;font-size:11.5px}
+  .btn-mini:hover{background:#f2f6fb}
+  .btn-del{padding:0 10px;border:1px solid #dcc4c0;background:#fff;color:#a3271b;font-size:11.5px}
+  .btn-del:hover{background:#fdf2f0}
+  .btn-kichi{padding:0 11px;border:1px solid #b9c8dd;background:#fff;color:#5a6b85;font-size:11.5px;font-weight:700}
+  .btn-kichi.on{border-color:#1f4e79;background:#1f4e79;color:#fff}
+  #bar .grid3.fields{align-items:start;gap:12px 16px}
+  #bar .grid3{display:grid;grid-template-columns:repeat(3, minmax(0, 1fr));gap:10px 14px}
+  #bar .grid2{display:grid;grid-template-columns:repeat(2, minmax(0, 1fr));gap:12px 16px}
+  #bar .p-fld{display:flex;flex-direction:column;gap:5px}
+  #bar .p-fld > span{font-size:10.5px;font-weight:500;letter-spacing:0.08em;color:#5a6b85}
+  #bar .p-fld input{padding:8px 11px;font-size:13.5px}
+  #bar .p-fld input[type="date"]{padding:7px 9px;font-size:13px}
+  #bar .p-fld textarea{padding:8px 11px;font-size:13px;line-height:1.6;resize:vertical}
+  #bar .p-panel{padding-top:13px;border-top:1px solid #cfdaea;display:flex;flex-direction:column;gap:11px}
+  #bar .p-panel .note{font-size:11.5px;color:#6b7c96}
+  #bar .span2{grid-column:span 2}
+  #bar .span3{grid-column:span 3}
+
+  #pSheetWrap{display:flex;justify-content:center;padding:26px 20px 60px}
+  #pSheet{
+    width:210mm;min-height:297mm;padding:28px 56px 26px;background:#fff;color:#1a2436;
+    font-size:12.5px;line-height:1.62;letter-spacing:0.015em;display:flex;flex-direction:column;
+    box-shadow:0 2px 18px rgba(20, 32, 58, 0.14)
+  }
+  #pSheet p{margin:0;text-align:justify;text-wrap:pretty}
+  #pSheet h1{margin:0;font-weight:700;font-size:21.5px;line-height:1.42;letter-spacing:0.05em;color:#14203a;text-align:center}
+  #pSheet h2{margin:0;font-size:14.5px;font-weight:700;color:#14203a;letter-spacing:0.03em}
+  #pSheet strong{font-weight:700}
+  #pSheet strong.u{border-bottom:1px solid #b02418;padding-bottom:1px}
+  .head{display:flex;justify-content:space-between;align-items:flex-start;gap:24px}
+  .head .right{text-align:right;line-height:1.65}
+  .issue{font-size:11.5px;color:#48566b;letter-spacing:0.08em}
+  .company{margin-top:11px;font-size:15px;font-weight:700;letter-spacing:0.03em;color:#14203a}
+  .office{margin-top:3px;font-size:13.5px;font-weight:500}
+  .chief{margin-top:1px;font-size:12.5px;color:#33404f}
+  .titleblock{margin-top:16px;display:flex;flex-direction:column;align-items:center;gap:8px}
+  .rule{width:100%;height:1px;background:#dde3ec}
+  .accent{width:46px;height:2px;background:#b02418}
+  .lead{margin-top:13px!important}
+  .cards{margin-top:13px;display:grid;grid-template-columns:repeat(3, 1fr);gap:10px}
+  .card{border:1px solid #d5dce6;border-top:3px solid #14203a;padding:9px 14px 10px;text-align:center}
+  .card .lbl{font-size:10.5px;font-weight:700;letter-spacing:0.16em;color:#55637a}
+  .card .big{margin-top:5px;font-size:16.5px;font-weight:700;line-height:1.3;color:#14203a}
+  .card .sub{margin-top:2px;font-size:11.5px;color:#33404f}
+  .card.gold{border:1px solid #e3d3ab;border-top:3px solid #cfae5e;background:#fdfaf1}
+  .card.gold .lbl{color:#75530c}
+  .card.gold .big{color:#654a08}
+  .card.gold .sub{color:#75530c}
+  .card.red{border:1px solid #e8cfcb;border-top:3px solid #b02418;background:#fdf7f6}
+  .card.red .lbl{color:#91473d}
+  .card.red .big{color:#a3271b}
+  .card.red .sub{color:#7a4b44}
+  .applynote{margin-top:8px!important;font-size:12px;line-height:1.65;color:#a3271b;font-weight:500}
+  .caution{margin-top:12px;display:flex;align-items:center;gap:12px;background:#fdf8ec;border-left:3px solid #cfae5e;padding:7px 15px}
+  .caution .tag{flex:none;font-size:10.5px;font-weight:700;letter-spacing:0.12em;color:#75530c}
+  .caution .txt{font-size:13px;font-weight:700;color:#654a08;letter-spacing:0.02em}
+  .sec{margin-top:12px}
+  .sec + .sec{margin-top:11px}
+  .sechead{display:flex;align-items:center;gap:11px;padding-bottom:6px;border-bottom:1.5px solid #14203a}
+  .num{flex:none;width:21px;height:21px;display:flex;align-items:center;justify-content:center;background:#14203a;color:#fff;font-size:11.5px;font-weight:700}
+  .sec p{margin-top:9px!important}
+  .sec p + p{margin-top:6px!important}
+  .tiles{margin-top:9px;display:grid;gap:8px}
+  .tile{border:1px solid #d5dce6;background:#f7f9fc;padding:6px 10px;text-align:center;font-size:12.5px;font-weight:500;letter-spacing:0.02em}
+  .notes{margin:8px 0 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:2px;font-size:10px;line-height:1.55;color:#55637a}
+  .closing{margin-top:9px!important}
+  .contact{margin-top:20px}
+  .contact .box{border:1px solid #d5dce6;border-top:2px solid #14203a;padding:9px 17px 10px;display:flex;flex-direction:column}
+  .contact .lbl{font-size:10px;font-weight:700;letter-spacing:0.16em;color:#55637a}
+  .contact .name{margin-top:6px;font-size:14px;font-weight:700;color:#14203a;letter-spacing:0.02em}
+  .contact .addr{margin-top:3px;font-size:12px;color:#33404f}
+  .contact .person{margin-top:5px;font-size:12.5px;color:#1a2436}
+  .contact .nums{margin-top:4px;display:flex;align-items:baseline;gap:20px;font-size:12.5px;color:#1a2436;white-space:nowrap;font-variant-numeric:tabular-nums}
+  .contact .nums > span{display:flex;align-items:baseline;gap:7px}
+  .contact .nums .k{color:#55637a;font-size:11px;letter-spacing:0.1em}
+
+  @page{size:A4 portrait;margin:0}
+  @media print{
+    html,body{background:#fff}
+    [data-noprint]{display:none!important}
+    #kyukaShell .sheetwrap{overflow:visible!important;padding:0!important;background:#fff!important}
+    .page{box-shadow:none!important;margin:0!important}
+    #pSheetWrap{padding:0!important}
+    #pSheet{box-shadow:none!important;width:210mm;height:297mm}
+  }
+</style>
+</head>
+<body>
+<div id="boot">読み込みに失敗しました。ページを再読み込みしてください。</div>
+
+<div id="topNav" data-noprint>
+  <div class="tn-brand">
+    <div class="tn-co">太陽シルバーサービス株式会社</div>
+    <div class="tn-title">価格改定・休暇案内 作成ツール</div>
+  </div>
+  <div class="tn-modes">
+    <button class="tn-mode on" id="modeKyukaBtn">休暇案内</button>
+    <button class="tn-mode" id="modePriceBtn">価格改定案内</button>
+  </div>
+  <div class="tn-office">
+    <label for="sharedOffice">営業所</label>
+    <select id="sharedOffice"></select>
+  </div>
+</div>
+
+<div id="appBody">
+
+  <!-- ============ 休暇案内 ============ -->
+  <div id="kyukaShell" class="shell">
+    <div class="panel" data-noprint>
+      <div class="phead">
+        <div style="font-size:13px;font-weight:700;color:#14524b">休暇案内 作成ツール</div>
+        <div style="display:flex;gap:8px;margin-top:10px">
+          <button class="btn-main" id="kBtnPrint">印刷 / PDF</button>
+          <button class="btn-sub" id="btnSave">履歴に保存</button>
+        </div>
+        <div class="hint" style="margin-top:10px">住所・TEL・FAX・所長名は自動で入ります<br><span id="officeInfo"></span></div>
+      </div>
+      <div class="pbody">
+        <div class="fld">
+          <label class="lbl">① 宛先の種類</label>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+            <button class="seg" id="segCare">居宅介護支援事業所</button>
+            <button class="seg" id="segHosp">病院・施設</button>
+          </div>
+          <div class="hint" id="audienceHint"></div>
+        </div>
+
+        <div class="fld">
+          <label class="lbl" for="fKind">② 休暇の種類</label>
+          <select class="ctl" id="fKind">
+            <option value="GW">ゴールデンウィーク</option>
+            <option value="SW">シルバーウィーク</option>
+            <option value="OBON">お盆休み</option>
+            <option value="NENMATSU">年末年始</option>
+          </select>
+        </div>
+
+        <div class="fld">
+          <label class="lbl" for="fStart">③ 休業期間</label>
+          <div style="display:flex;align-items:center;gap:8px">
+            <input class="ctl" style="flex:1" type="date" id="fStart">
+            <span style="font-size:13px;color:#8a857b">〜</span>
+            <input class="ctl" style="flex:1" type="date" id="fEnd">
+          </div>
+          <div class="err" id="dateError" style="display:none">終了日が開始日より前になっています。日付をご確認ください。</div>
+        </div>
+
+        <div class="fld">
+          <label class="lbl" for="fResume">④ 営業開始日（休み明け）</label>
+          <input class="ctl" type="date" id="fResume">
+          <div class="hint">終了日を入れると翌日が自動で入ります</div>
+        </div>
+
+        <div class="fld">
+          <label class="lbl" for="fStaff">⑤ 緊急時の担当者（営業所ごとに記憶）</label>
+          <input class="ctl" type="text" id="fStaff" placeholder="担当者名（例：山下 厚）">
+          <input class="ctl" type="text" id="fMobile" placeholder="携帯番号（例：090-1234-5678）">
+        </div>
+
+        <div class="fld">
+          <label class="lbl" for="fFont">⑥ 案内文の書体（20種類）</label>
+          <select class="ctl" id="fFont"></select>
+          <div id="fontPreview" style="border:1px solid #e8e5df;border-radius:6px;padding:10px 12px;font-size:15px">拝啓　平素は格別のお引き立てを賜り</div>
+        </div>
+
+        <div class="fld">
+          <label class="lbl" for="fIssued">⑦ 発行日</label>
+          <input class="ctl" type="date" id="fIssued">
+        </div>
+
+        <div class="fld">
+          <label class="lbl" for="fNote">⑧ 追記（任意）</label>
+          <textarea class="ctl" id="fNote" rows="3" style="font-size:13.5px;resize:vertical" placeholder="例：期間中のご納品依頼は8月8日までにお願いいたします。"></textarea>
+        </div>
+
+        <div style="border-top:1px solid #e8e5df;padding-top:16px;display:flex;flex-direction:column;gap:9px">
+          <div class="lbl">保存した案内（クリックで呼び出し）</div>
+          <div id="historyList"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sheetwrap"><div id="kSheet"></div></div>
+  </div>
+
+  <!-- ============ 価格改定案内 ============ -->
+  <div id="priceShell" hidden>
+    <div id="bar" data-noprint>
+     <div class="inner">
+      <div style="font-size:13px;font-weight:700;color:#1f4e79;margin-bottom:-3px">価格改定案内 作成ツール</div>
+      <div class="row">
+        <span class="caps">書体</span>
+        <select id="pFont"></select>
+        <div class="spacer">
+          <button class="btn-primary" id="pBtnPdf">PDFをダウンロード</button>
+          <button class="btn-print" id="pBtnPrint">印刷</button>
+        </div>
+      </div>
+
+      <div class="row sep">
+        <span class="p-hint">営業所は上部の共通メニューで選択できます。所長名・住所・TEL・FAXが一括で切り替わります</span>
+        <div class="spacer">
+          <button class="btn-ghost" id="tglBody">案内文を編集</button>
+          <button class="btn-ghost" id="tglProducts">対象商品を編集</button>
+          <button class="btn-ghost" id="tglDetail">所長名・住所などを編集</button>
+          <button class="btn-link" id="btnReset">この営業所の編集をリセット</button>
+        </div>
+      </div>
+
+      <div class="grid3 fields">
+        <label class="p-fld"><span>担当者名（手入力）</span><input id="contact" placeholder="例：山田 太郎" /></label>
+        <label class="p-fld"><span>担当者携帯電話番号（手入力）</span><input id="mobile" placeholder="例：090-1234-5678" /></label>
+        <label class="p-fld"><span>文書の日付</span>
+          <div style="display:flex; gap:6px;">
+            <input type="date" id="issueISO" style="flex:1; min-width:0;" />
+            <button class="btn-kichi" id="btnKichi" title="吉日表記に切り替え">吉日</button>
+          </div>
+        </label>
+        <label class="p-fld"><span>改定実施日</span><input type="date" id="effectiveISO" /></label>
+        <label class="p-fld"><span>ご発注期日（目安）</span><input type="date" id="deadlineISO" /></label>
+      </div>
+
+      <div class="p-panel" id="panelBody" hidden>
+        <div class="row">
+          <span class="caps">案内文の編集</span>
+          <span class="note">**太字** ／ __赤下線付き太字__ ／ 改行もそのまま反映されます</span>
+          <button class="btn-mini" id="btnResetBody" style="margin-left:auto;">案内文を初期値に戻す</button>
+        </div>
+        <div class="grid2" id="bodyFields"></div>
+      </div>
+
+      <div class="p-panel" id="panelProducts" hidden>
+        <div class="row">
+          <span class="caps">対象商品（1〜6件）</span>
+          <button class="btn-mini" id="btnAddProduct">＋ 商品を追加</button>
+          <span class="note">入力した商品名が本文の「主な対象商品」に反映されます</span>
+        </div>
+        <div class="grid3" id="productFields"></div>
+      </div>
+
+      <div class="p-panel" id="panelDetail" hidden>
+        <div class="grid3" id="detailFields"></div>
+      </div>
+     </div>
+    </div>
+
+    <div id="pSheetWrap">
+      <section id="pSheet">
+        <div class="head">
+          <div style="font-size:14px; font-weight:500; padding-top:3px; letter-spacing:0.08em;" data-t="recipient"></div>
+          <div class="right">
+            <div class="issue" id="outIssue"></div>
+            <div class="company">太陽シルバーサービス株式会社</div>
+            <div class="office" id="outOffice"></div>
+            <div class="chief">所長　<span id="outChief"></span></div>
+          </div>
+        </div>
+
+        <div class="titleblock">
+          <div class="rule"></div>
+          <h1 data-t="title"></h1>
+          <div class="accent"></div>
+        </div>
+
+        <p class="lead" data-t="lead"></p>
+
+        <div class="cards">
+          <div class="card">
+            <div class="lbl" data-t="effectiveLabel"></div>
+            <div class="big" id="outEffective"></div>
+            <div class="sub" data-t="effectiveNote"></div>
+          </div>
+          <div class="card gold">
+            <div class="lbl" data-t="deadlineLabel"></div>
+            <div class="big" id="outDeadline"></div>
+            <div class="sub" data-t="deadlineNote"></div>
+          </div>
+          <div class="card red">
+            <div class="lbl" data-t="basisLabel"></div>
+            <div class="big" data-t="basisTitle"></div>
+            <div class="sub" data-t="basisNote"></div>
+          </div>
+        </div>
+
+        <p class="applynote" data-t="applyNote"></p>
+
+        <div class="caution">
+          <span class="tag">ご注意</span>
+          <span class="txt" data-t="caution"></span>
+        </div>
+
+        <div class="sec">
+          <div class="sechead"><span class="num">1</span><h2 data-t="h1"></h2></div>
+          <p data-t="s1p1"></p>
+          <p data-t="s1p2"></p>
+        </div>
+
+        <div class="sec">
+          <div class="sechead"><span class="num">2</span><h2 data-t="h2"></h2></div>
+          <div class="tiles" id="outTiles"></div>
+          <ul class="notes" id="outNotes"></ul>
+        </div>
+
+        <p class="closing" data-t="closing"></p>
+
+        <div class="contact">
+          <div class="box">
+            <div class="lbl">お問い合わせ先</div>
+            <div class="name">太陽シルバーサービス株式会社　<span id="outOffice2"></span></div>
+            <div class="addr">〒<span id="outZip"></span>　<span id="outAddress"></span></div>
+            <div class="person" id="outPerson" hidden></div>
+            <div class="nums">
+              <span><span class="k">TEL</span><span id="outTel"></span></span>
+              <span><span class="k">FAX</span><span id="outFax"></span></span>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+</div>
+
+<script>
+(function () {
+"use strict";
+try {
+
+/* ============================================================
+   営業所マスター（19営業所・両モード共通）
+   ============================================================ */
+var OFFICES = [
+  { name: "小倉営業所",   chief: "森口 賢一", zip: "802-0011", address: "福岡県北九州市小倉北区重住3丁目11-21", tel: "093-952-1616", fax: "093-952-1627" },
+  { name: "小倉南営業所", chief: "串山 清彦", zip: "800-0226", address: "福岡県北九州市小倉南区田原新町1丁目3-34", tel: "093-474-5670", fax: "093-474-5671" },
+  { name: "八幡西営業所", chief: "福本 浩史", zip: "807-0815", address: "福岡県北九州市八幡西区本城東2丁目4-8", tel: "093-603-3512", fax: "093-601-3593" },
+  { name: "八幡東営業所", chief: "兼重 陽介", zip: "805-0033", address: "福岡県北九州市八幡東区山路松尾町14-6", tel: "093-654-8515", fax: "093-654-8516" },
+  { name: "行橋営業所",   chief: "久保 匠史", zip: "824-0043", address: "福岡県行橋市大字流末1327番地", tel: "0930-26-9640", fax: "0930-26-9641" },
+  { name: "田川営業所",   chief: "早崎 勝",   zip: "826-0042", address: "福岡県田川市大字川宮1200番地", tel: "0947-44-1895", fax: "0947-44-2372" },
+  { name: "飯塚営業所",   chief: "佐藤 正仁", zip: "820-0081", address: "福岡県飯塚市枝国510番地7", tel: "0948-52-6360", fax: "0948-52-6362" },
+  { name: "福岡南営業所", chief: "瀧本 順一", zip: "816-0912", address: "福岡県大野城市御笠川2丁目10-15", tel: "092-504-9810", fax: "092-504-9811" },
+  { name: "福岡西営業所", chief: "佐藤 正和", zip: "814-0032", address: "福岡県福岡市早良区小田部4丁目11-31", tel: "092-833-0131", fax: "092-833-0132" },
+  { name: "福岡東営業所", chief: "岡本 将臣", zip: "812-0064", address: "福岡県福岡市東区松田3丁目25-2", tel: "092-627-1150", fax: "092-627-1151" },
+  { name: "久留米営業所", chief: "牟田 知広", zip: "838-0141", address: "福岡県小郡市小郡97番地19　オフィスパレア小郡Ⅰ（2号室＋3号室）", tel: "0942-72-8822", fax: "0942-72-8833" },
+  { name: "大牟田営業所", chief: "橋本 浩志", zip: "837-0924", address: "福岡県大牟田市大字歴木446-1", tel: "0944-59-1488", fax: "0944-59-1481" },
+  { name: "佐賀営業所",   chief: "江原 諒",   zip: "849-0937", address: "佐賀県佐賀市鍋島5丁目4-15", tel: "0952-34-1224", fax: "0952-34-1225" },
+  { name: "長崎営業所",   chief: "吉本 幸治", zip: "851-0122", address: "長崎県長崎市界2丁目2番4号", tel: "095-834-0535", fax: "095-834-0536" },
+  { name: "大村営業所",   chief: "中富 一貴", zip: "856-0844", address: "長崎県大村市溝陸町643-1", tel: "0957-49-6222", fax: "0957-49-6333" },
+  { name: "壱岐営業所",   chief: "長岡 計治", zip: "811-5117", address: "長崎県壱岐市郷ノ浦町田中触1078", tel: "0920-47-9005", fax: "0920-47-9006" },
+  { name: "熊本営業所",   chief: "城戸 健",   zip: "862-0945", address: "熊本県熊本市東区画図町大字下無田1432-22", tel: "096-377-7630", fax: "096-377-7631" },
+  { name: "熊本北営業所", chief: "髙木 伸基", zip: "861-5517", address: "熊本県熊本市北区鶴羽田1丁目10番7号", tel: "096-341-5765", fax: "096-341-5766" },
+  { name: "大分営業所",   chief: "山下 厚",   zip: "870-0953", address: "大分県大分市下郡東1-4-35", tel: "097-504-8001", fax: "097-504-8002" }
+];
+
+/* ============================================================
+   休暇案内モード
+   ============================================================ */
+var KyukaApp = (function (OFFICES) {
+
+var KINDS = {
+  GW:       { label: "ゴールデンウィーク", body: "ゴールデンウィーク", title: "ゴールデンウィーク休業のご案内", greet: "新緑の候" },
+  SW:       { label: "シルバーウィーク",   body: "シルバーウィーク",   title: "シルバーウィーク休業のご案内",   greet: "秋涼の候" },
+  OBON:     { label: "お盆休み",           body: "夏季（お盆）",       title: "夏季休業（お盆休み）のご案内",   greet: "盛夏の候" },
+  NENMATSU: { label: "年末年始",           body: "年末年始",           title: "年末年始休業のご案内",           greet: "師走の候" }
+};
+
+var FONTS = [
+  { label: "明朝｜Noto Serif JP", css: "'Noto Serif JP', serif" },
+  { label: "明朝｜しっぽり明朝", css: "'Shippori Mincho', serif" },
+  { label: "明朝｜Zen Old Mincho", css: "'Zen Old Mincho', serif" },
+  { label: "明朝｜BIZ UDP明朝（読みやすさ重視）", css: "'BIZ UDPMincho', serif" },
+  { label: "明朝｜BIZ UD明朝", css: "'BIZ UDMincho', serif" },
+  { label: "明朝｜さわらび明朝", css: "'Sawarabi Mincho', serif" },
+  { label: "明朝｜ひな明朝（細め・上品）", css: "'Hina Mincho', serif" },
+  { label: "明朝｜Kaisei Opti", css: "'Kaisei Opti', serif" },
+  { label: "明朝｜Kaisei Decol（やわらか）", css: "'Kaisei Decol', serif" },
+  { label: "明朝｜Zen Antique（レトロ）", css: "'Zen Antique', serif" },
+  { label: "明朝｜しっぽりアンティーク", css: "'Shippori Antique', serif" },
+  { label: "毛筆風｜Yuji Syuku", css: "'Yuji Syuku', serif" },
+  { label: "教科書体｜Klee One", css: "'Klee One', serif" },
+  { label: "ゴシック｜Noto Sans JP", css: "'Noto Sans JP', sans-serif" },
+  { label: "ゴシック｜BIZ UDPゴシック（役所文書向け）", css: "'BIZ UDPGothic', sans-serif" },
+  { label: "ゴシック｜Zen角ゴシック New", css: "'Zen Kaku Gothic New', sans-serif" },
+  { label: "ゴシック｜M PLUS 1p", css: "'M PLUS 1p', sans-serif" },
+  { label: "丸ゴシック｜M PLUS Rounded 1c", css: "'M PLUS Rounded 1c', sans-serif" },
+  { label: "丸ゴシック｜Zen丸ゴシック", css: "'Zen Maru Gothic', sans-serif" },
+  { label: "丸ゴシック｜小杉丸", css: "'Kosugi Maru', sans-serif" }
+];
+
+var HKEY = "taiyo-kyuka-history-v1";
+var MKEY = "taiyo-kyuka-staff-v1";
+var DEFAULT_LEAD = 2;
+
+var KIND_DATE_HINT = {
+  GW:       { sm: 4,  sd: 29, em: 5,  ed: 6,  sameYear: true },
+  SW:       { sm: 9,  sd: 19, em: 9,  ed: 23, sameYear: true },
+  OBON:     { sm: 8,  sd: 13, em: 8,  ed: 16, sameYear: true },
+  NENMATSU: { sm: 12, sd: 29, em: 1,  ed: 3,  sameYear: false }
+};
+function kindDefaultRange(kindKey, baseYear) {
+  var h = KIND_DATE_HINT[kindKey];
+  if (!h) return null;
+  var sy = baseYear, ey = h.sameYear ? baseYear : baseYear + 1;
+  return {
+    start: sy + "-" + String(h.sm).padStart(2, "0") + "-" + String(h.sd).padStart(2, "0"),
+    end: ey + "-" + String(h.em).padStart(2, "0") + "-" + String(h.ed).padStart(2, "0")
+  };
+}
+
+function iso(d) {
+  return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+}
+function parse(s) {
+  if (!s) return null;
+  var p = String(s).split("-").map(Number);
+  if (p.length !== 3 || !p[0] || !p[1]) return null;
+  var d = new Date(p[0], p[1] - 1, p[2]);
+  return isNaN(d.getTime()) ? null : d;
+}
+function fmt(s) {
+  var d = parse(s);
+  if (!d) return "　　　年　　月　　日";
+  return d.getFullYear() + "年" + (d.getMonth() + 1) + "月" + d.getDate() + "日（" + "日月火水木金土"[d.getDay()] + "）";
+}
+function fmtShort(s) {
+  var d = parse(s);
+  if (!d) return "　月　日";
+  return (d.getMonth() + 1) + "月" + d.getDate() + "日（" + "日月火水木金土"[d.getDay()] + "）";
+}
+function shift(s, n) {
+  var d = parse(s);
+  if (!d) return "";
+  d.setDate(d.getDate() + n);
+  return iso(d);
+}
+function esc(s) {
+  return String(s == null ? "" : s)
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+}
+
+var state = {
+  officeIdx: 0, kind: "OBON", audience: "care",
+  start: "", end: "", resume: "", staff: "", mobile: "",
+  issued: iso(new Date()), note: "", fitStep: 0,
+  fontCss: FONTS[0].css, history: [], staffMap: {}
+};
+
+function leadDays() {
+  return DEFAULT_LEAD;
+}
+
+function isClosed(d, startISO, endISO) {
+  var s = parse(startISO), e = parse(endISO);
+  if (!s || !e) return false;
+  return d >= s && d <= e;
+}
+function isBiz(d, startISO, endISO) {
+  var w = d.getDay();
+  if (w === 0 || w === 6) return false;
+  return !isClosed(d, startISO, endISO);
+}
+function stepBiz(fromISO, n, startISO, endISO) {
+  var d = parse(fromISO);
+  if (!d) return "";
+  var dir = n < 0 ? -1 : 1;
+  var left = Math.abs(n), guard = 0;
+  while (left > 0 && guard < 400) {
+    d.setDate(d.getDate() + dir);
+    if (isBiz(d, startISO, endISO)) left--;
+    guard++;
+  }
+  return iso(d);
+}
+function prevBizOnOrBefore(fromISO, startISO, endISO) {
+  var d = parse(fromISO);
+  if (!d) return "";
+  var guard = 0;
+  while (!isBiz(d, startISO, endISO) && guard < 60) { d.setDate(d.getDate() - 1); guard++; }
+  return iso(d);
+}
+function nextBizOnOrAfter(fromISO, startISO, endISO) {
+  var d = parse(fromISO);
+  if (!d) return "";
+  var guard = 0;
+  while (!isBiz(d, startISO, endISO) && guard < 60) { d.setDate(d.getDate() + 1); guard++; }
+  return iso(d);
+}
+
+function persistStaff(officeName, staff, mobile) {
+  var map = {};
+  for (var k in state.staffMap) map[k] = state.staffMap[k];
+  map[officeName] = { staff: staff, mobile: mobile };
+  state.staffMap = map;
+  try { localStorage.setItem(MKEY, JSON.stringify(map)); } catch (e) {}
+}
+function writeHistory(list) {
+  state.history = list;
+  try { localStorage.setItem(HKEY, JSON.stringify(list)); } catch (e) {}
+}
+
+var SHORT = { "発注締切": "締切", "お届け": "納品", "営業開始": "開始", "休業": "休", "休業開始": "休", "休業最終日": "休" };
+
+function buildMonths(marks, f) {
+  var keys = Object.keys(marks);
+  if (!keys.length) return [];
+  var dates = keys.map(parse).filter(Boolean).sort(function (a, b) { return a - b; });
+  if (!dates.length) return [];
+  var first = dates[0], last = dates[dates.length - 1];
+  var months = [];
+  var y = first.getFullYear(), m = first.getMonth(), guard = 0;
+  while (guard < 4 && (y < last.getFullYear() || (y === last.getFullYear() && m <= last.getMonth()))) {
+    months.push([y, m]);
+    m++; if (m > 11) { m = 0; y++; }
+    guard++;
+  }
+  var two = months.length > 1;
+  var tf = Math.max(0.8, f);
+  var opt = two
+    ? { cellMm: 8.6 * f, basis: "0",    numFs: (9.6 * tf).toFixed(1) + "pt",  tagFs: (6.7 * tf).toFixed(1) + "pt", short: true,  gridFs: (9.0 * tf).toFixed(1) + "pt" }
+    : { cellMm: 9.6 * f, basis: "100%", numFs: (11.0 * tf).toFixed(1) + "pt", tagFs: (7.2 * tf).toFixed(1) + "pt", short: false, gridFs: (10.0 * tf).toFixed(1) + "pt" };
+  return months.map(function (ym) { return buildMonth(ym[0], ym[1], marks, opt); });
+}
+
+function buildMonth(year, month, marks, opt) {
+  var firstCol = (new Date(year, month, 1).getDay() + 6) % 7;
+  var dim = new Date(year, month + 1, 0).getDate();
+  var prevDim = new Date(year, month, 0).getDate();
+  var rows = Math.ceil((firstCol + dim) / 7);
+  var cells = [];
+  for (var i = 0; i < rows * 7; i++) {
+    var col = i % 7;
+    var dayNum = i - firstCol + 1;
+    if (dayNum < 1 || dayNum > dim) {
+      var outNum = dayNum < 1 ? prevDim + dayNum : dayNum - dim;
+      cells.push({ num: String(outNum), tag: "", bg: "#f4f3f0", fg: "#c3c0ba", tagColor: "transparent",
+                   weight: "400", border: "0.4pt solid #dcdad4", slash: "none" });
+      continue;
+    }
+    var key = iso(new Date(year, month, dayNum));
+    var mark = marks[key];
+    var bg = "#ffffff";
+    var fg = col === 6 ? "#c0392b" : col === 5 ? "#2f6fbf" : "#232320";
+    var tag = "", tagColor = "transparent", weight = "500";
+    var border = "0.4pt solid #d8d5cd", slash = "none";
+    if (mark) {
+      bg = mark.bg; tagColor = mark.color; weight = "700";
+      tag = opt.short ? (SHORT[mark.tag] || mark.tag) : mark.tag;
+      if (mark.fg) fg = mark.fg;
+      if (mark.closed) {
+        border = "0.5pt solid #c4664c";
+        slash = "repeating-linear-gradient(135deg, rgba(168,58,34,0.22) 0 2.4px, rgba(168,58,34,0) 2.4px 7px)";
+      }
+      if (mark.strong) border = "1.3pt solid " + mark.color;
+    }
+    cells.push({ num: String(dayNum), tag: tag, bg: bg, fg: fg, tagColor: tagColor,
+                 weight: weight, border: border, slash: slash });
+  }
+  return {
+    year: year + "年", month: (month + 1) + "月",
+    cellH: opt.cellMm.toFixed(2) + "mm", basis: opt.basis,
+    numFs: opt.numFs, tagFs: opt.tagFs, gridFs: opt.gridFs, cells: cells
+  };
+}
+
+var WEEKDAYS = [
+  { label: "月", color: "#2b2b28" }, { label: "火", color: "#2b2b28" }, { label: "水", color: "#2b2b28" },
+  { label: "木", color: "#2b2b28" }, { label: "金", color: "#2b2b28" },
+  { label: "土", color: "#2f6fbf" }, { label: "日", color: "#c0392b" }
+];
+
+function compute() {
+  var office = OFFICES[state.officeIdx] || OFFICES[0];
+  var kind = KINDS[state.kind] || KINDS.OBON;
+  var care = state.audience === "care";
+  var lead = leadDays();
+
+  var startISO = state.start, endISO = state.end;
+  var resumeISO = state.resume || (endISO ? nextBizOnOrAfter(shift(endISO, 1), startISO, endISO) : "");
+  var lastDelivery = startISO ? prevBizOnOrBefore(shift(startISO, -1), startISO, endISO) : "";
+  var deadline = lastDelivery ? stepBiz(lastDelivery, -lead, startISO, endISO) : "";
+  var firstDelivery = resumeISO ? stepBiz(resumeISO, lead, startISO, endISO) : "";
+
+  var periodText = startISO && endISO ? fmt(startISO) + " 〜 " + fmtShort(endISO) : "　　月　　日 〜 　　月　　日";
+
+  var marks = {};
+  if (startISO && endISO) {
+    var s = parse(startISO), e = parse(endISO);
+    if (s && e && s <= e) {
+      var d = new Date(s.getTime()), guard = 0;
+      while (d <= e && guard < 40) {
+        marks[iso(d)] = { tag: "休業", bg: "#f7ddd4", color: "#a8391f", fg: "#8f2f1c", closed: true };
+        d.setDate(d.getDate() + 1); guard++;
+      }
+    }
+  }
+  if (!care && lastDelivery)  marks[lastDelivery]  = { tag: "お届け",   bg: "#e6f0e8", color: "#2f7a4a", fg: "#245c39", strong: true };
+  if (!care && firstDelivery) marks[firstDelivery] = { tag: "お届け",   bg: "#e6f0e8", color: "#2f7a4a", fg: "#245c39", strong: true };
+  if (!care && deadline)      marks[deadline]      = { tag: "発注締切", bg: "#e8ecf7", color: "#3c5bb5", fg: "#33499a", strong: true };
+  if (startISO && marks[startISO]) marks[startISO] = { tag: "休業開始", bg: "#f0bcac", color: "#8f2f1c", fg: "#7a2614", closed: true, strong: true };
+  if (endISO && marks[endISO] && endISO !== startISO) marks[endISO] = { tag: "休業最終日", bg: "#f0bcac", color: "#8f2f1c", fg: "#7a2614", closed: true, strong: true };
+  if (resumeISO) marks[resumeISO] = { tag: "営業開始", bg: "#dcefe0", color: "#1f6b3c", fg: "#17542e", strong: true };
+
+  var f = Math.max(0.58, 1 - 0.055 * (state.fitStep || 0));
+  var mm = function (v) { return (v * f).toFixed(2) + "mm"; };
+  var months = startISO && endISO ? buildMonths(marks, f) : [];
+
+  var greet = "拝啓　" + kind.greet + "、";
+  var bodyCare = greet + "平素は格別のお引き立てを賜り、厚く御礼申し上げます。さて、弊社" + office.name +
+    "では、下記の期間を" + kind.body + "休業とさせていただきます。休業期間中はご不便をおかけいたしますが、何卒ご了承のほどお願い申し上げます。なお、期間中も緊急のご依頼につきましては下記の連絡先にて承ります。";
+  var bodyHosp = greet + "平素は格別のお引き立てを賜り、厚く御礼申し上げます。さて、弊社" + office.name +
+    "では、下記の期間を" + kind.body + "休業とさせていただきます。福祉用具のご発注につきましては、お届けまでに通常" + lead +
+    "営業日を頂戴しております。休業前のお届けをご希望の場合は、" + (deadline ? fmtShort(deadline) : "休業前") +
+    "までにご発注をお願いいたします。退院日・入所日のご予定に合わせ、お早めのご連絡をお願い申し上げます。";
+
+  var legend = care
+    ? [{ label: "休業日（受付を休止します）", bg: "#f7ddd4", border: "#c4664c" },
+       { label: "営業開始日（通常業務再開）", bg: "#dcefe0", border: "#1f6b3c" }]
+    : [{ label: "休業日",       bg: "#f7ddd4", border: "#c4664c" },
+       { label: "営業開始日",   bg: "#dcefe0", border: "#1f6b3c" },
+       { label: "発注締切日",   bg: "#e8ecf7", border: "#3c5bb5" },
+       { label: "お届け日",     bg: "#e6f0e8", border: "#2f7a4a" }];
+
+  var sD = parse(startISO), eD = parse(endISO);
+
+  return {
+    office: office, kind: kind, care: care, lead: lead,
+    startISO: startISO, endISO: endISO, resumeISO: resumeISO,
+    lastDelivery: lastDelivery, deadline: deadline, firstDelivery: firstDelivery,
+    dateError: !!(sD && eD && eD < sD),
+    periodText: periodText,
+    resumeText: resumeISO ? fmt(resumeISO) : "　　月　　日",
+    deadlineText: deadline ? fmt(deadline) : "　　月　　日",
+    lastDeliveryText: lastDelivery ? fmt(lastDelivery) : "　　月　　日",
+    firstDeliveryText: firstDelivery ? fmt(firstDelivery) : "　　月　　日",
+    issuedText: state.issued ? fmt(state.issued) : "　　　年　　月　　日",
+    addresseeLine: care ? "居宅介護支援事業所　ご担当者様" : "病院・施設　ご担当者様",
+    docTitle: kind.title, bodyText: care ? bodyCare : bodyHosp,
+    audienceHint: care ? "休業カレンダー＋緊急連絡の案内が付きます" : "発注リードタイム表と発注→お届けカレンダーが付きます",
+    calTitle: care ? "休業カレンダー（休業期間と通常業務の再開日）"
+                   : "発注 → お届け カレンダー（通常リードタイム：ご発注から" + lead + "営業日）",
+    calHint: care ? "赤い斜線の日が休業日です。緑の枠の日から通常業務を再開いたします。"
+                  : "青の枠＝この日までにご発注ください／緑の枠＝お届けできる日／赤い斜線＝休業日",
+    months: months, legend: legend, hasCalendar: months.length > 0,
+    hasNote: !!(state.note || "").trim(),
+    staffText: state.staff || "担当者名",
+    mobileText: state.mobile || "090-　　　-　　　",
+    needStaff: !state.staff || !state.mobile,
+    calTop: mm(3), calPadTop: mm(2.5), monthsTop: mm(3), monthsGap: mm(3) + " " + mm(4),
+    noteTop: mm(4), notePad: mm(3) + " " + mm(4.4),
+    noteFs: (9.5 * Math.max(0.76, f)).toFixed(1) + "pt",
+    footTop: mm(2.5), footPad: mm(2.4) + " " + mm(5)
+  };
+}
+
+function monthHTML(m) {
+  var head = WEEKDAYS.map(function (w) {
+    return '<div style="height:4.6mm;display:flex;align-items:center;justify-content:center;font-size:' +
+      m.gridFs + ';font-weight:700;color:' + w.color + '">' + w.label + '</div>';
+  }).join("");
+  var cells = m.cells.map(function (d) {
+    return '<div style="height:' + m.cellH + ';box-sizing:border-box;border:' + d.border +
+      ';margin:-0.2pt;background-color:' + d.bg + ';background-image:' + d.slash +
+      ';padding:0.5mm 0.8mm;display:flex;flex-direction:column">' +
+      '<div style="display:flex;align-items:baseline;justify-content:space-between;gap:0.6mm">' +
+      '<div style="font-size:' + m.numFs + ';font-weight:' + d.weight + ';color:' + d.fg + ';line-height:1.05">' + d.num + '</div>' +
+      '<div style="font-size:' + m.tagFs + ';font-weight:700;color:' + d.tagColor +
+      ';text-align:right;line-height:1.1;white-space:nowrap">' + esc(d.tag) + '</div>' +
+      '</div></div>';
+  }).join("");
+  return '<div style="flex:1 1 ' + m.basis + ';min-width:0;display:flex;flex-direction:column;gap:1.2mm">' +
+    '<div style="display:flex;align-items:baseline;gap:2mm">' +
+    '<div style="font-size:11pt;font-weight:700">' + m.year + '</div>' +
+    '<div style="font-size:11pt;font-weight:700">' + m.month + '</div></div>' +
+    '<div style="display:grid;grid-template-columns:repeat(7,1fr);background:#eeece2;border:0.4pt solid #c9c6ba">' + head + '</div>' +
+    '<div style="margin-top:-0.4pt"><div style="display:grid;grid-template-columns:repeat(7,1fr)">' + cells + '</div></div>' +
+    '</div>';
+}
+
+function sheetHTML(v) {
+  var o = v.office;
+  var h = '';
+  h += '<section class="page" style="font-family:' + esc(state.fontCss) + '">';
+  h += '<div style="text-align:right;font-size:9.5pt">' + v.issuedText + '</div>';
+  h += '<div style="margin-top:3mm;font-size:11.5pt;font-weight:600;letter-spacing:.05em">' + v.addresseeLine + '</div>';
+  h += '<div style="margin-top:2mm;text-align:right;font-size:9pt;line-height:1.55">' +
+       '<div style="font-size:10.5pt;font-weight:600;letter-spacing:.04em">太陽シルバーサービス株式会社</div>' +
+       '<div style="font-size:10pt;font-weight:600">' + esc(o.name) + '　所長　' + esc(o.chief) + '</div></div>';
+  h += '<div style="margin-top:3.5mm;text-align:center;font-size:13pt;font-weight:700;letter-spacing:.16em">' + esc(v.docTitle) + '</div>';
+  h += '<div style="margin-top:3mm;text-indent:1em;text-wrap:pretty">' + esc(v.bodyText) + '</div>';
+  h += '<div style="margin-top:3mm;text-align:right">敬具</div>';
+  h += '<div style="margin-top:2mm;text-align:center;font-size:10pt;letter-spacing:.4em">記</div>';
+
+  h += '<div style="margin-top:2mm;border:1pt solid #2b2b29;padding:2.4mm 6mm;display:flex;flex-direction:column;gap:1.4mm">';
+  h += '<div style="display:flex;gap:6mm;align-items:baseline"><div style="width:30mm;flex:none;font-weight:600;letter-spacing:.12em">休業期間</div>' +
+       '<div style="font-size:11pt;font-weight:600">' + v.periodText + '</div></div>';
+  h += '<div style="display:flex;gap:6mm;align-items:baseline"><div style="width:30mm;flex:none;font-weight:600;letter-spacing:.12em">営業開始日</div>' +
+       '<div style="font-size:11pt;font-weight:600">' + v.resumeText + '</div></div>';
+  if (!v.care) {
+    h += '<div style="display:flex;gap:6mm;align-items:baseline"><div style="width:30mm;flex:none;font-weight:600;letter-spacing:.12em">発注締切</div>' +
+         '<div><span style="font-size:11pt;font-weight:600">' + v.deadlineText + '</span>' +
+         '<span style="font-size:9.5pt">　まで（休業前お届け分）</span></div></div>';
+  }
+  h += '</div>';
+
+  if (v.hasNote) {
+    h += '<div style="margin-top:' + v.noteTop + ';padding:' + v.notePad + ';background:#f4f2ec;font-size:' + v.noteFs +
+         ';white-space:pre-wrap;text-wrap:pretty">' + esc(state.note) + '</div>';
+  }
+  h += '<div style="margin-top:2mm;text-align:right;letter-spacing:.2em">以上</div>';
+
+  if (v.hasCalendar) {
+    h += '<div style="margin-top:' + v.calTop + ';border-top:0.8pt solid #c9c6be;padding-top:' + v.calPadTop + '">';
+    h += '<div style="font-size:10.5pt;font-weight:700;letter-spacing:.08em">' + esc(v.calTitle) + '</div>';
+    h += '<div style="margin-top:1mm;font-size:9pt;color:#4a4a46">' + esc(v.calHint) + '</div>';
+    h += '<div style="margin-top:' + v.monthsTop + ';display:flex;flex-wrap:wrap;align-items:flex-start;gap:' + v.monthsGap + '">';
+    h += v.months.map(monthHTML).join("");
+    h += '</div>';
+    h += '<div style="margin-top:2.5mm;display:flex;flex-wrap:wrap;gap:2mm 5mm;font-size:8.5pt">';
+    h += v.legend.map(function (l) {
+      return '<div style="display:flex;align-items:center;gap:2mm"><span style="width:5mm;height:5mm;background:' +
+        l.bg + ';border:0.6pt solid ' + l.border + ';display:inline-block"></span>' + esc(l.label) + '</div>';
+    }).join("");
+    h += '</div></div>';
+  }
+
+  h += '<div style="margin-top:auto;padding-top:' + v.footTop + '">';
+  h += '<div style="border:1pt solid #2b2b29;padding:' + v.footPad + ';display:flex;align-items:flex-end;justify-content:space-between;gap:6mm">';
+  h += '<div style="line-height:1.45">' +
+       '<div style="font-size:10.5pt;font-weight:700;letter-spacing:.04em">太陽シルバーサービス株式会社　' + esc(o.name) + '</div>' +
+       '<div style="font-size:9pt">' + esc(o.address) + '</div>' +
+       '<div style="font-size:9pt">TEL ' + esc(o.tel) + '　FAX ' + esc(o.fax) + '</div></div>';
+  h += '<div style="text-align:right;line-height:1.45;white-space:nowrap">' +
+       '<div style="font-size:8pt;letter-spacing:.1em;color:#4a4a46">担当</div>' +
+       '<div style="font-size:10.5pt;font-weight:700">' + esc(v.staffText) + '</div>' +
+       '<div style="font-size:10.5pt;font-weight:700">携帯 ' + esc(v.mobileText) + '</div>';
+  if (v.needStaff) {
+    h += '<span data-noprint style="display:inline-block;margin-top:1mm;background:#fff2b8;border:1px solid #e0c65a;font-size:8.5pt;padding:0.8mm 2mm;border-radius:2mm">担当者を入力してください</span>';
+  }
+  h += '</div></div></div>';
+  h += '</section>';
+  return h;
+}
+
+var $ = function (id) { return document.getElementById(id); };
+var sheetEl;
+var lastSig = null;
+
+function setVal(el, val) { if (el && el.value !== val) el.value = val; }
+
+function syncPanel(v) {
+  setVal($("fKind"), state.kind);
+  setVal($("fStart"), state.start);
+  setVal($("fEnd"), state.end);
+  setVal($("fResume"), v.resumeISO);
+  setVal($("fStaff"), state.staff);
+  setVal($("fMobile"), state.mobile);
+  setVal($("fFont"), state.fontCss);
+  setVal($("fIssued"), state.issued);
+  setVal($("fNote"), state.note);
+
+  $("segCare").className = "seg" + (v.care ? " on" : "");
+  $("segHosp").className = "seg" + (v.care ? "" : " on");
+  $("audienceHint").textContent = v.audienceHint;
+  $("officeInfo").textContent = v.office.address + "／TEL " + v.office.tel;
+  $("dateError").style.display = v.dateError ? "" : "none";
+  $("fontPreview").style.fontFamily = state.fontCss;
+}
+
+function renderHistory() {
+  var wrap = $("historyList");
+  wrap.innerHTML = "";
+  wrap.style.cssText = "display:flex;flex-direction:column;gap:9px";
+  if (!state.history.length) {
+    var empty = document.createElement("div");
+    empty.style.cssText = "font-size:12px;color:#a5a09a";
+    empty.textContent = "まだ保存されていません";
+    wrap.appendChild(empty);
+    return;
+  }
+  state.history.forEach(function (entry, i) {
+    var row = document.createElement("div");
+    row.className = "hitem";
+    var load = document.createElement("button");
+    load.className = "load";
+    load.innerHTML = '<div style="font-size:12.5px;font-weight:700">' + esc(entry.title) + '</div>' +
+                     '<div style="font-size:11px;color:#8a857b;margin-top:2px">' + esc(entry.sub) + '</div>';
+    load.onclick = function () {
+      var idx = OFFICES.findIndex(function (o) { return o.name === entry.officeName; });
+      if (idx >= 0) {
+        state.officeIdx = idx;
+        var sharedSel = document.getElementById("sharedOffice");
+        if (sharedSel) sharedSel.value = String(idx);
+      }
+      state.kind = entry.kind; state.audience = entry.audience;
+      state.start = entry.start || ""; state.end = entry.end || ""; state.resume = entry.resume || "";
+      state.staff = entry.staff || ""; state.mobile = entry.mobile || "";
+      state.note = entry.note || "";
+      state.fontCss = entry.fontCss || state.fontCss;
+      render();
+    };
+    var del = document.createElement("button");
+    del.className = "del";
+    del.textContent = "×";
+    del.title = "削除";
+    del.onclick = function () {
+      var list = state.history.slice();
+      list.splice(i, 1);
+      writeHistory(list);
+      renderHistory();
+    };
+    row.appendChild(load); row.appendChild(del);
+    wrap.appendChild(row);
+  });
+}
+
+function render() {
+  var v = compute();
+  sheetEl.innerHTML = sheetHTML(v);
+  syncPanel(v);
+  fit();
+}
+
+function fit() {
+  var el = sheetEl.querySelector(".page");
+  if (!el) return;
+  var sig = [state.officeIdx, state.kind, state.audience, state.start, state.end,
+             state.resume, state.note, state.fontCss, state.issued].join("|");
+  if (sig !== lastSig) {
+    lastSig = sig;
+    if (state.fitStep) { state.fitStep = 0; render(); return; }
+  }
+  var over = el.scrollHeight - el.clientHeight;
+  if (over > 1 && (state.fitStep || 0) < 12) {
+    state.fitStep = (state.fitStep || 0) + 1;
+    render();
+  }
+}
+
+function init() {
+  sheetEl = $("kSheet");
+
+  var fsel = $("fFont");
+  FONTS.forEach(function (f) {
+    var opt = document.createElement("option");
+    opt.value = f.css; opt.textContent = f.label; opt.style.fontFamily = f.css;
+    fsel.appendChild(opt);
+  });
+
+  var history = [], staffMap = {};
+  try { history = JSON.parse(localStorage.getItem(HKEY) || "[]"); } catch (e) {}
+  try { staffMap = JSON.parse(localStorage.getItem(MKEY) || "{}"); } catch (e) {}
+  state.history = Array.isArray(history) ? history : [];
+  state.staffMap = (staffMap && typeof staffMap === "object") ? staffMap : {};
+  var saved = state.staffMap[OFFICES[0].name] || {};
+  state.staff = saved.staff || "";
+  state.mobile = saved.mobile || "";
+
+  $("fKind").onchange = function (e) {
+    state.kind = e.target.value;
+    if (!state.start && !state.end) {
+      var baseYear = (parse(state.issued) || new Date()).getFullYear();
+      var range = kindDefaultRange(state.kind, baseYear);
+      if (range) {
+        state.start = range.start; state.end = range.end;
+        state.resume = nextBizOnOrAfter(shift(range.end, 1), range.start, range.end);
+      }
+    }
+    render();
+  };
+  $("segCare").onclick = function () { state.audience = "care"; render(); };
+  $("segHosp").onclick = function () { state.audience = "hospital"; render(); };
+  $("fStart").onchange = function (e) { state.start = e.target.value; render(); };
+  $("fEnd").onchange = function (e) {
+    var val = e.target.value;
+    state.end = val;
+    if (val && !state.resume) state.resume = nextBizOnOrAfter(shift(val, 1), state.start, val);
+    render();
+  };
+  $("fResume").onchange = function (e) { state.resume = e.target.value; render(); };
+  $("fIssued").onchange = function (e) { state.issued = e.target.value; render(); };
+  $("fNote").oninput = function (e) { state.note = e.target.value; render(); };
+  $("fFont").onchange = function (e) { state.fontCss = e.target.value; render(); };
+  $("fStaff").oninput = function (e) {
+    state.staff = e.target.value;
+    persistStaff(OFFICES[state.officeIdx].name, state.staff, state.mobile);
+    render();
+  };
+  $("fMobile").oninput = function (e) {
+    state.mobile = e.target.value;
+    persistStaff(OFFICES[state.officeIdx].name, state.staff, state.mobile);
+    render();
+  };
+  $("kBtnPrint").onclick = function () { window.print(); };
+  $("btnSave").onclick = function () {
+    var v = compute();
+    var entry = {
+      title: v.office.name + "／" + v.kind.label + "／" + (v.care ? "居宅向け" : "病院・施設向け"),
+      sub: v.periodText + "　書体:" + state.fontCss.split(",")[0].replace(/'/g, ""),
+      officeName: v.office.name, kind: state.kind, audience: state.audience,
+      start: state.start, end: state.end, resume: v.resumeISO,
+      staff: state.staff, mobile: state.mobile, note: state.note,
+      fontCss: state.fontCss, savedAt: Date.now()
+    };
+    writeHistory([entry].concat(state.history).slice(0, 30));
+    renderHistory();
+  };
+
+  renderHistory();
+  render();
+
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(function () { state.fitStep = 0; lastSig = null; render(); });
+  }
+  window.addEventListener("beforeprint", function () { fit(); });
+}
+
+function setOfficeIndex(idx) {
+  state.officeIdx = idx;
+  var name = OFFICES[idx].name;
+  var s = state.staffMap[name] || {};
+  state.staff = s.staff || ""; state.mobile = s.mobile || "";
+  render();
+}
+
+return { init: init, setOfficeIndex: setOfficeIndex };
+
+})(OFFICES);
+
+/* ============================================================
+   価格改定案内モード
+   ============================================================ */
+var PriceApp = (function (OFFICES) {
+
+const FONTS = [
+  { key: "noto-sans",       label: "Noto Sans JP（ゴシック）", stack: "'Noto Sans JP', sans-serif" },
+  { key: "noto-serif",      label: "Noto Serif JP（明朝）",   stack: "'Noto Serif JP', serif" },
+  { key: "biz-gothic",      label: "BIZ UDPゴシック",          stack: "'BIZ UDPGothic', sans-serif" },
+  { key: "biz-mincho",      label: "BIZ UDP明朝",              stack: "'BIZ UDPMincho', serif" },
+  { key: "zen-kaku",        label: "Zen角ゴシック New",        stack: "'Zen Kaku Gothic New', sans-serif" },
+  { key: "zen-old-mincho",  label: "Zenオールド明朝",          stack: "'Zen Old Mincho', serif" },
+  { key: "zen-maru",        label: "Zen丸ゴシック",            stack: "'Zen Maru Gothic', sans-serif" },
+  { key: "shippori",        label: "しっぽり明朝",             stack: "'Shippori Mincho', serif" },
+  { key: "mplus1p",         label: "M PLUS 1p",                stack: "'M PLUS 1p', sans-serif" },
+  { key: "mplus-round",     label: "M PLUS 丸ゴシック",        stack: "'M PLUS Rounded 1c', sans-serif" },
+  { key: "sawarabi-gothic", label: "さわらびゴシック",         stack: "'Sawarabi Gothic', sans-serif" },
+  { key: "sawarabi-mincho", label: "さわらび明朝",             stack: "'Sawarabi Mincho', serif" },
+  { key: "kosugi-maru",     label: "小杉丸ゴシック",           stack: "'Kosugi Maru', sans-serif" },
+  { key: "klee",            label: "Klee One（手書き風）",     stack: "'Klee One', serif" },
+  { key: "plex",            label: "IBM Plex Sans JP",         stack: "'IBM Plex Sans JP', sans-serif" },
+  { key: "yugothic",        label: "游ゴシック（PC標準）",     stack: "'Yu Gothic', YuGothic, 'Hiragino Kaku Gothic ProN', sans-serif" }
+];
+
+const DETAIL = [
+  { key: "chief",   label: "所長名",     span: 1 },
+  { key: "zip",     label: "郵便番号",   span: 1 },
+  { key: "tel",     label: "TEL",        span: 1 },
+  { key: "fax",     label: "FAX",        span: 1 },
+  { key: "address", label: "住所",       span: 3 }
+];
+
+const DEFAULT_PRODUCTS = ["トイレットペーパー", "ペーパータオル", "ティッシュペーパー"];
+
+const BODY_FIELDS = [
+  { key: "recipient",      label: "宛名", rows: 1, span: 1, def: "お取引先各位" },
+  { key: "title",          label: "タイトル（改行で2行）", rows: 2, span: 1, def: "紙製品価格改定に伴う\nお早めのご発注のお願い" },
+  { key: "lead",           label: "冒頭のあいさつ・本文", rows: 4, span: 2, def: "平素より格別のご愛顧を賜り、誠にありがとうございます。このたび、原材料・原燃料価格、物流費、エネルギーコスト、人件費等の上昇を背景としたメーカー・仕入先の価格改定に伴い、下記のとおり一部の紙製品について価格を改定いたします。" },
+  { key: "effectiveLabel", label: "左カード見出し", rows: 1, span: 1, def: "改定実施" },
+  { key: "effectiveNote",  label: "左カード補足", rows: 1, span: 1, def: "納品分より適用" },
+  { key: "deadlineLabel",  label: "中央カード見出し", rows: 1, span: 1, def: "ご発注期日（目安）" },
+  { key: "deadlineNote",   label: "中央カード補足", rows: 1, span: 1, def: "納品を確約するものではありません" },
+  { key: "basisLabel",     label: "右カード見出し", rows: 1, span: 1, def: "適用基準" },
+  { key: "basisTitle",     label: "右カード本文", rows: 1, span: 1, def: "「納品日」を基準" },
+  { key: "basisNote",      label: "右カード補足", rows: 1, span: 1, def: "発注日ではありません" },
+  { key: "caution",        label: "「ご注意」の一文", rows: 1, span: 1, def: "現在、すでに一部商品で納期遅延が発生しております" },
+  { key: "applyNote",      label: "赤字の注記", rows: 3, span: 2, def: "9月30日までにご発注いただいた場合でも、納品が10月1日以降となった商品につきましては、改定後価格が適用されます。対象商品および改定後価格は、別途お渡しするお見積書をご確認ください。" },
+  { key: "h1",             label: "見出し 1", rows: 1, span: 1, def: "9月はさらなるご注文・物流の混雑が予想されます" },
+  { key: "h2",             label: "見出し 2", rows: 1, span: 1, def: "主な対象商品" },
+  { key: "s1p1",           label: "見出し1の本文（前半）", rows: 3, span: 1, def: "価格改定前のご注文の集中に加え、シルバーウィーク前の発注量増加、連休に伴うメーカー・仕入先の稼働日および物流スケジュールへの影響により、通常よりも納品までにお時間をいただく可能性がございます。" },
+  { key: "s1p2",           label: "見出し1の本文（後半）", rows: 3, span: 1, def: "メーカー・仕入先の在庫状況や出荷状況によっては、**ご希望の納期に間に合わない場合がございます。**現在の在庫状況や今後のご使用予定をご確認いただき、__できるだけ余裕をもって、お早めにご発注ください__ますようお願いいたします。" },
+  { key: "notes",          label: "※ 注記（1行ごとに1項目）", rows: 4, span: 2, def: "現在ご採用いただいている商品によって、価格改定の対象となる商品は異なります。\n対象商品・改定後価格の詳細は、別途お渡しするお見積書をご確認ください。\n早期にご発注いただいた場合でも、メーカー・仕入先の在庫状況、出荷状況、物流状況等により、9月30日までの納品を確約するものではございません。" },
+  { key: "closing",        label: "結びの文", rows: 3, span: 2, def: "お客様にはご負担とご不便をおかけいたしますが、何卒事情をご理解賜りますとともに、**お早めのご確認・ご発注にご協力**くださいますようお願い申し上げます。" }
+];
+const BODY_DEF = {};
+BODY_FIELDS.forEach(f => { BODY_DEF[f.key] = f.def; });
+
+const DEFAULTS = { issueISO: "2026-08-19", effectiveISO: "2026-10-01", deadlineISO: "2026-09-06", font: "noto-sans", kichi: false };
+
+const KEY = "taiyo-price-letter-v1";
+let state = { i: 0, offices: {}, doc: {} };
+
+function load() {
+  try {
+    const raw = localStorage.getItem(KEY);
+    if (raw) {
+      const p = JSON.parse(raw);
+      state.offices = p.offices || {};
+      state.doc = p.doc || {};
+      if (typeof p.i === "number" && OFFICES[p.i]) state.i = p.i;
+    }
+  } catch (e) {}
+}
+function save() {
+  try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {}
+}
+
+const office = () => OFFICES[state.i];
+const ov = () => state.offices[office().name] || {};
+const val = k => { const o = ov(); return o[k] !== undefined && o[k] !== null ? o[k] : (office()[k] || ""); };
+const doc = (k, def) => { const v = state.doc[k]; return v !== undefined && v !== null && v !== "" ? v : def; };
+const body = k => doc(k, BODY_DEF[k]);
+
+function setOffice(key, value) {
+  const n = office().name;
+  state.offices[n] = Object.assign({}, state.offices[n], { [key]: value });
+  save(); render();
+}
+function setDoc(key, value) { state.doc[key] = value; save(); render(); }
+
+function rich(text) {
+  const esc = s => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  return String(text == null ? "" : text).split("\n").map(line =>
+    line.split(/(\*\*[^*]+\*\*|__[^_]+__)/).map(seg => {
+      if (!seg) return "";
+      if (seg.startsWith("**") && seg.endsWith("**")) return "<strong>" + esc(seg.slice(2, -2)) + "</strong>";
+      if (seg.startsWith("__") && seg.endsWith("__")) return '<strong class="u">' + esc(seg.slice(2, -2)) + "</strong>";
+      return esc(seg);
+    }).join("")
+  ).join("<br />");
+}
+
+function jpDate(iso, kichiMode) {
+  const p = String(iso).split("-");
+  if (p.length !== 3) return iso;
+  const y = Number(p[0]), m = Number(p[1]), d = Number(p[2]);
+  return kichiMode ? y + "年" + m + "月吉日" : y + "年" + m + "月" + d + "日";
+}
+
+const products = () => {
+  const p = state.doc.products;
+  return (Array.isArray(p) && p.length ? p : DEFAULT_PRODUCTS).slice(0, 6);
+};
+function setProducts(list) { setDoc("products", list.slice(0, 6)); }
+
+const $ = id => document.getElementById(id);
+
+function buildStaticControls() {
+  $("pFont").innerHTML = FONTS.map(f => '<option value="' + f.key + '">' + f.label + "</option>").join("");
+
+  $("bodyFields").innerHTML = BODY_FIELDS.map(f =>
+    '<label class="p-fld' + (f.span === 2 ? " span2" : "") + '"><span>' + f.label +
+    '</span><textarea data-body="' + f.key + '" rows="' + f.rows + '"></textarea></label>'
+  ).join("");
+  $("detailFields").innerHTML = DETAIL.map(f =>
+    '<label class="p-fld' + (f.span === 3 ? " span3" : "") + '"><span>' + f.label +
+    '</span><input data-detail="' + f.key + '" /></label>'
+  ).join("");
+
+  $("pFont").addEventListener("change", e => setDoc("font", e.target.value));
+  $("contact").addEventListener("input", e => setOffice("contact", e.target.value));
+  $("mobile").addEventListener("input", e => setOffice("mobile", e.target.value));
+  $("issueISO").addEventListener("change", e => setDoc("issueISO", e.target.value));
+  $("effectiveISO").addEventListener("change", e => setDoc("effectiveISO", e.target.value));
+  $("deadlineISO").addEventListener("change", e => setDoc("deadlineISO", e.target.value));
+  $("btnKichi").addEventListener("click", () => setDoc("kichi", !doc("kichi", DEFAULTS.kichi)));
+
+  document.querySelectorAll("[data-body]").forEach(el =>
+    el.addEventListener("input", e => setDoc(el.dataset.body, e.target.value)));
+  document.querySelectorAll("[data-detail]").forEach(el =>
+    el.addEventListener("input", e => setOffice(el.dataset.detail, e.target.value)));
+
+  const toggle = (btn, panel, on, off) => $(btn).addEventListener("click", () => {
+    const p = $(panel);
+    p.hidden = !p.hidden;
+    $(btn).textContent = p.hidden ? off : on;
+  });
+  toggle("tglBody", "panelBody", "案内文を閉じる", "案内文を編集");
+  toggle("tglProducts", "panelProducts", "対象商品を閉じる", "対象商品を編集");
+  toggle("tglDetail", "panelDetail", "所長名・住所などを閉じる", "所長名・住所などを編集");
+
+  $("btnAddProduct").addEventListener("click", () => setProducts(products().concat(["新しい商品"])));
+  $("btnResetBody").addEventListener("click", () => {
+    BODY_FIELDS.forEach(f => { delete state.doc[f.key]; });
+    save(); render();
+  });
+  $("btnReset").addEventListener("click", () => { delete state.offices[office().name]; save(); render(); });
+  $("pBtnPrint").addEventListener("click", () => window.print());
+  $("pBtnPdf").addEventListener("click", exportPdf);
+}
+
+function renderProductFields() {
+  const list = products();
+  $("productFields").innerHTML = list.map((name, i) =>
+    '<label class="p-fld"><span>商品 ' + (i + 1) + '</span><div style="display:flex; gap:6px;">' +
+    '<input data-product="' + i + '" placeholder="商品名" style="flex:1; min-width:0;" />' +
+    (list.length > 1 ? '<button class="btn-del" data-remove="' + i + '">削除</button>' : "") +
+    "</div></label>"
+  ).join("");
+  list.forEach((name, i) => {
+    const input = document.querySelector('[data-product="' + i + '"]');
+    input.value = name;
+    input.addEventListener("input", e => {
+      const next = products().slice();
+      next[i] = e.target.value;
+      state.doc.products = next.slice(0, 6);
+      save(); renderSheet();
+    });
+  });
+  document.querySelectorAll("[data-remove]").forEach(b =>
+    b.addEventListener("click", () => setProducts(products().filter((x, k) => k !== Number(b.dataset.remove)))));
+  $("btnAddProduct").hidden = list.length >= 6;
+}
+
+function renderSheet() {
+  const fontKey = doc("font", DEFAULTS.font);
+  const font = FONTS.find(f => f.key === fontKey) || FONTS[0];
+  $("pSheet").style.fontFamily = font.stack;
+
+  document.querySelectorAll("#pSheet [data-t]").forEach(el => { el.innerHTML = rich(body(el.dataset.t)); });
+
+  const kichi = !!doc("kichi", DEFAULTS.kichi);
+  $("outIssue").textContent = jpDate(doc("issueISO", DEFAULTS.issueISO), kichi);
+  $("outEffective").textContent = jpDate(doc("effectiveISO", DEFAULTS.effectiveISO), false);
+  $("outDeadline").textContent = jpDate(doc("deadlineISO", DEFAULTS.deadlineISO), false);
+
+  $("outOffice").textContent = office().name;
+  $("outOffice2").textContent = office().name;
+  $("outChief").textContent = val("chief");
+  $("outZip").textContent = val("zip");
+  $("outAddress").textContent = val("address");
+  $("outTel").textContent = val("tel");
+  $("outFax").textContent = val("fax");
+
+  const c = val("contact"), m = val("mobile");
+  const line = c && m ? c + "　（携帯：" + m + "）" : (c || (m ? "（携帯：" + m + "）" : ""));
+  $("outPerson").hidden = !line;
+  $("outPerson").innerHTML = line ? "担当　" + rich(line) : "";
+
+  const list = products();
+  const tiles = $("outTiles");
+  tiles.style.gridTemplateColumns = "repeat(" + Math.min(list.length, 3) + ", minmax(0, 1fr))";
+  tiles.innerHTML = list.map(n => '<div class="tile">' + rich(n) + "</div>").join("");
+
+  $("outNotes").innerHTML = String(body("notes")).split("\n").filter(t => t.trim())
+    .map(t => "<li>※ " + rich(t) + "</li>").join("");
+}
+
+function renderControls() {
+  $("pFont").value = doc("font", DEFAULTS.font);
+  $("contact").value = val("contact");
+  $("mobile").value = val("mobile");
+  $("issueISO").value = doc("issueISO", DEFAULTS.issueISO);
+  $("effectiveISO").value = doc("effectiveISO", DEFAULTS.effectiveISO);
+  $("deadlineISO").value = doc("deadlineISO", DEFAULTS.deadlineISO);
+  $("btnKichi").classList.toggle("on", !!doc("kichi", DEFAULTS.kichi));
+  document.querySelectorAll("[data-body]").forEach(el => { el.value = body(el.dataset.body); });
+  document.querySelectorAll("[data-detail]").forEach(el => { el.value = val(el.dataset.detail); });
+  renderProductFields();
+}
+
+function render() { renderControls(); renderSheet(); }
+
+let busy = false;
+function exportPdf() {
+  const node = $("pSheet");
+  if (busy) return;
+  if (!window.html2pdf) { window.print(); return; }
+  busy = true;
+  $("pBtnPdf").textContent = "PDF作成中…";
+  window.html2pdf().set({
+    margin: 0,
+    filename: "価格改定のご案内_" + office().name + ".pdf",
+    image: { type: "jpeg", quality: 0.98 },
+    html2canvas: { scale: 3, useCORS: true, backgroundColor: "#ffffff" },
+    jsPDF: { unit: "mm", format: "a4", orientation: "portrait" }
+  }).from(node).save()
+    .then(done).catch(done);
+  function done() { busy = false; $("pBtnPdf").textContent = "PDFをダウンロード"; }
+}
+
+function init() {
+  load();
+  buildStaticControls();
+  render();
+}
+
+function setOfficeIndex(idx) {
+  state.i = idx;
+  save(); render();
+}
+
+return { init: init, setOfficeIndex: setOfficeIndex };
+
+})(OFFICES);
+
+/* ============================================================
+   共通コーディネーター（営業所選択・モード切替）
+   ============================================================ */
+var sharedOfficeSel = document.getElementById("sharedOffice");
+OFFICES.forEach(function (o, i) {
+  var opt = document.createElement("option");
+  opt.value = String(i); opt.textContent = o.name;
+  sharedOfficeSel.appendChild(opt);
+});
+sharedOfficeSel.onchange = function (e) {
+  var idx = Number(e.target.value) || 0;
+  KyukaApp.setOfficeIndex(idx);
+  PriceApp.setOfficeIndex(idx);
+};
+
+var MODE_KEY = "taiyo-annai-mode-v1";
+function setMode(mode) {
+  var kyuka = mode !== "price";
+  document.getElementById("kyukaShell").hidden = !kyuka;
+  document.getElementById("priceShell").hidden = kyuka;
+  document.getElementById("modeKyukaBtn").className = "tn-mode" + (kyuka ? " on" : "");
+  document.getElementById("modePriceBtn").className = "tn-mode" + (kyuka ? "" : " on");
+  try { localStorage.setItem(MODE_KEY, mode); } catch (e) {}
+}
+document.getElementById("modeKyukaBtn").onclick = function () { setMode("kyuka"); };
+document.getElementById("modePriceBtn").onclick = function () { setMode("price"); };
+
+KyukaApp.init();
+PriceApp.init();
+
+var initialMode = "kyuka";
+try { initialMode = localStorage.getItem(MODE_KEY) || "kyuka"; } catch (e) {}
+setMode(initialMode);
+
+} catch (err) {
+  var b = document.getElementById("boot");
+  if (b) { b.style.display = "block"; b.textContent = "読み込みに失敗しました（" + err.message + "）。ページを再読み込みしてください。"; }
+}
+})();
+</script>
+</body>
+</html>
