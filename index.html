@@ -707,7 +707,7 @@ function buildCalendarWindow(marks, f, fallbackStartISO, fallbackEndISO) {
       var holidayName = jpHolidayName(d);
       if (holidayName) { fg = "#c0392b"; tag = "祝"; tagColor = "#c0392b"; }
     }
-    var label = d.getDate() === 1 ? (d.getMonth() + 1) + "/" + d.getDate() : String(d.getDate());
+    var label = (d.getMonth() + 1) + "/" + d.getDate();
     cells.push({ label: label, tag: tag, bg: bg, fg: fg, tagColor: tagColor, weight: weight, border: border, slash: slash });
     d.setDate(d.getDate() + 1);
   }
