@@ -816,8 +816,8 @@ function compute() {
     if (!care && lastDelivery)  marks[lastDelivery]  = { tag: "お届け",   bg: "#e6f0e8", color: "#2f7a4a", fg: "#245c39", strong: true };
     if (!care && firstDelivery) marks[firstDelivery] = { tag: "お届け",   bg: "#e6f0e8", color: "#2f7a4a", fg: "#245c39", strong: true };
     if (!care && deadline)      marks[deadline]      = { tag: "発注締切", bg: "#e8ecf7", color: "#3c5bb5", fg: "#33499a", strong: true };
-    if (minClosed && marks[minClosed]) marks[minClosed] = { tag: "休業開始", bg: "#f0bcac", color: "#8f2f1c", fg: "#7a2614", closed: true, strong: true };
-    if (maxClosed && marks[maxClosed] && maxClosed !== minClosed) marks[maxClosed] = { tag: "休業最終日", bg: "#f0bcac", color: "#8f2f1c", fg: "#7a2614", closed: true, strong: true };
+    if (minClosed && marks[minClosed]) marks[minClosed].tag = "休業開始";
+    if (maxClosed && marks[maxClosed] && maxClosed !== minClosed) marks[maxClosed].tag = "休業最終日";
     if (resumeISO) marks[resumeISO] = { tag: "営業開始", bg: "#dcefe0", color: "#1f6b3c", fg: "#17542e", strong: true };
 
     var s = parse(startISO), e = parse(endISO);
