@@ -49,6 +49,9 @@
   #kyukaShell .lbl{font-size:12px;font-weight:700;color:#55524b}
   #kyukaShell .hint{font-size:11.5px;color:#8a857b;line-height:1.7}
   #kyukaShell .ctl{padding:10px 11px;border:1px solid #cfcbc2;border-radius:6px;font-size:14px;background:#fff}
+  .calcell{cursor:pointer}
+  .calcell:hover{outline:1.6px solid #2f80b8;outline-offset:-1.6px}
+  @media print{ .calcell:hover{outline:none} }
   .btn-main{flex:1;padding:11px 0;border:none;border-radius:7px;background:#2f80b8;color:#fff;font-size:14px;font-weight:700;cursor:pointer}
   .btn-main:hover{background:#256a99}
   .btn-sub{padding:11px 14px;border:1px solid #2f80b8;border-radius:7px;background:#fff;color:#2f80b8;font-size:13px;font-weight:700;cursor:pointer}
@@ -486,6 +489,12 @@ var KIND_DATE_HINT = {
   NENMATSU: { sm: 12, sd: 29, em: 1,  ed: 3,  sameYear: false }
 };
 function kindDefaultRange(kindKey, baseYear) {
+  if (kindKey === "SW") {
+    var respect = nthMonday(baseYear, 9, 3);
+    var equinox = new Date(baseYear, 8, shubun(baseYear));
+    var end = equinox.getTime() > respect.getTime() ? equinox : new Date(respect.getTime() + 2 * 86400000);
+    return { start: iso(respect), end: iso(end) };
+  }
   var h = KIND_DATE_HINT[kindKey];
   if (!h) return null;
   var sy = baseYear, ey = h.sameYear ? baseYear : baseYear + 1;
@@ -531,7 +540,8 @@ var state = {
   officeIdx: 0, kind: "OBON", audience: "care",
   start: "", end: "", staff: "", mobile: "",
   issued: iso(new Date()), issuedKichi: false, note: "", fitStep: 0,
-  fontCss: FONTS[0].css, history: [], staffMap: {}
+  fontCss: FONTS[0].css, history: [], staffMap: {},
+  dayOverride: {} /* isoDate -> "open" | "closed"（カレンダーをクリックした個別の休み／出勤の上書き） */
 };
 
 function fmtKichi(s) {
@@ -608,12 +618,21 @@ function jpHolidayName(d) {
   return holidayMapForYear(d.getFullYear())[iso(d)] || "";
 }
 
+function dayOverride(d) {
+  return state.dayOverride[iso(d)] || "";
+}
 function isClosed(d, startISO, endISO) {
+  var ov = dayOverride(d);
+  if (ov === "open") return false;
+  if (ov === "closed") return true;
   var s = parse(startISO), e = parse(endISO);
   if (!s || !e) return false;
   return d >= s && d <= e;
 }
 function isBiz(d, startISO, endISO) {
+  var ov = dayOverride(d);
+  if (ov === "open") return true;
+  if (ov === "closed") return false;
   var w = d.getDay();
   if (w === 0 || w === 6) return false;
   if (jpHolidayName(d)) return false;
@@ -708,7 +727,7 @@ function buildCalendarWindow(marks, f, fallbackStartISO, fallbackEndISO) {
       if (holidayName) { fg = "#c0392b"; tag = "祝"; tagColor = "#c0392b"; }
     }
     var label = (d.getMonth() + 1) + "/" + d.getDate();
-    cells.push({ label: label, tag: tag, bg: bg, fg: fg, tagColor: tagColor, weight: weight, border: border, slash: slash });
+    cells.push({ key: key, label: label, tag: tag, bg: bg, fg: fg, tagColor: tagColor, weight: weight, border: border, slash: slash });
     d.setDate(d.getDate() + 1);
   }
 
@@ -730,6 +749,43 @@ var WEEKDAYS = [
   { label: "土", color: "#2f6fbf" }, { label: "日", color: "#c0392b" }
 ];
 
+function collectClosedDates(startISO, endISO) {
+  var set = {};
+  var s = parse(startISO), e = parse(endISO);
+  if (s && e && s <= e) {
+    var d = new Date(s.getTime()), guard = 0;
+    while (d <= e && guard < 400) {
+      if (isBiz(d, startISO, endISO) === false) set[iso(d)] = true;
+      d.setDate(d.getDate() + 1); guard++;
+    }
+  }
+  for (var k in state.dayOverride) {
+    if (state.dayOverride[k] === "closed") {
+      var dd = parse(k);
+      if (dd && (!s || !e || dd < s || dd > e)) set[k] = true;
+    }
+  }
+  return set;
+}
+function groupConsecutiveDates(datesSet) {
+  var keys = Object.keys(datesSet).map(parse).filter(Boolean).sort(function (a, b) { return a - b; });
+  var ranges = [];
+  var i = 0;
+  while (i < keys.length) {
+    var rs = keys[i], re = keys[i];
+    while (i + 1 < keys.length && (keys[i + 1].getTime() - re.getTime()) === 86400000) { re = keys[++i]; }
+    ranges.push([rs, re]);
+    i++;
+  }
+  return ranges;
+}
+function formatClosedRanges(ranges) {
+  if (!ranges.length) return "　　月　　日 〜 　　月　　日";
+  return ranges.map(function (r) {
+    return r[0].getTime() === r[1].getTime() ? fmt(iso(r[0])) : fmt(iso(r[0])) + " 〜 " + fmtShort(iso(r[1]));
+  }).join("、");
+}
+
 function compute() {
   var office = OFFICES[state.officeIdx] || OFFICES[0];
   var kind = KINDS[state.kind] || KINDS.OBON;
@@ -738,29 +794,44 @@ function compute() {
 
   var startISO = state.start, endISO = state.end;
   var hasPeriod = !!(startISO && endISO);
-  var resumeISO = hasPeriod ? nextBizOnOrAfter(shift(endISO, 1), startISO, endISO) : "";
-  var lastDelivery = hasPeriod ? prevBizOnOrBefore(shift(startISO, -1), startISO, endISO) : "";
+
+  var closedSet = hasPeriod ? collectClosedDates(startISO, endISO) : {};
+  var closedRanges = hasPeriod ? groupConsecutiveDates(closedSet) : [];
+  var minClosed = closedRanges.length ? iso(closedRanges[0][0]) : "";
+  var maxClosed = closedRanges.length ? iso(closedRanges[closedRanges.length - 1][1]) : "";
+
+  var resumeISO = maxClosed ? nextBizOnOrAfter(shift(maxClosed, 1), startISO, endISO) : "";
+  var lastDelivery = minClosed ? prevBizOnOrBefore(shift(minClosed, -1), startISO, endISO) : "";
   var deadline = lastDelivery ? stepBiz(lastDelivery, -lead, startISO, endISO) : "";
   var firstDelivery = resumeISO ? stepBiz(resumeISO, lead, startISO, endISO) : "";
 
-  var periodText = hasPeriod ? fmt(startISO) + " 〜 " + fmtShort(endISO) : "　　月　　日 〜 　　月　　日";
+  var periodText = hasPeriod ? formatClosedRanges(closedRanges) : "　　月　　日 〜 　　月　　日";
 
   var marks = {};
+  var hasOpenGap = false;
   if (hasPeriod) {
-    var s = parse(startISO), e = parse(endISO);
-    if (s && e && s <= e) {
-      var d = new Date(s.getTime()), guard = 0;
-      while (d <= e && guard < 40) {
-        marks[iso(d)] = { tag: "休業", bg: "#f7ddd4", color: "#a8391f", fg: "#8f2f1c", closed: true };
-        d.setDate(d.getDate() + 1); guard++;
-      }
-    }
+    Object.keys(closedSet).forEach(function (key) {
+      marks[key] = { tag: "休業", bg: "#f7ddd4", color: "#a8391f", fg: "#8f2f1c", closed: true };
+    });
     if (!care && lastDelivery)  marks[lastDelivery]  = { tag: "お届け",   bg: "#e6f0e8", color: "#2f7a4a", fg: "#245c39", strong: true };
     if (!care && firstDelivery) marks[firstDelivery] = { tag: "お届け",   bg: "#e6f0e8", color: "#2f7a4a", fg: "#245c39", strong: true };
     if (!care && deadline)      marks[deadline]      = { tag: "発注締切", bg: "#e8ecf7", color: "#3c5bb5", fg: "#33499a", strong: true };
-    if (startISO && marks[startISO]) marks[startISO] = { tag: "休業開始", bg: "#f0bcac", color: "#8f2f1c", fg: "#7a2614", closed: true, strong: true };
-    if (endISO && marks[endISO] && endISO !== startISO) marks[endISO] = { tag: "休業最終日", bg: "#f0bcac", color: "#8f2f1c", fg: "#7a2614", closed: true, strong: true };
+    if (minClosed && marks[minClosed]) marks[minClosed] = { tag: "休業開始", bg: "#f0bcac", color: "#8f2f1c", fg: "#7a2614", closed: true, strong: true };
+    if (maxClosed && marks[maxClosed] && maxClosed !== minClosed) marks[maxClosed] = { tag: "休業最終日", bg: "#f0bcac", color: "#8f2f1c", fg: "#7a2614", closed: true, strong: true };
     if (resumeISO) marks[resumeISO] = { tag: "営業開始", bg: "#dcefe0", color: "#1f6b3c", fg: "#17542e", strong: true };
+
+    var s = parse(startISO), e = parse(endISO);
+    if (s && e && s <= e) {
+      var d = new Date(s.getTime()), guard = 0;
+      while (d <= e && guard < 400) {
+        var key2 = iso(d);
+        if (!marks[key2] && dayOverride(d) === "open") {
+          marks[key2] = { tag: "営業", bg: "#eef6ee", color: "#2f7a4a", fg: "#1f6b3c" };
+          hasOpenGap = true;
+        }
+        d.setDate(d.getDate() + 1); guard++;
+      }
+    }
   }
 
   var f = Math.max(0.58, 1 - 0.055 * (state.fitStep || 0));
@@ -790,6 +861,7 @@ function compute() {
        { label: "営業開始日",       bg: "#dcefe0", border: "#1f6b3c" },
        { label: "休暇前最終発注日", bg: "#e8ecf7", border: "#3c5bb5" },
        { label: "お届け日",         bg: "#e6f0e8", border: "#2f7a4a" }]);
+  if (hasOpenGap) legend = legend.concat([{ label: "営業（期間中の通常営業日）", bg: "#eef6ee", border: "#2f7a4a" }]);
 
   var sD = parse(startISO), eD = parse(endISO);
 
@@ -810,9 +882,10 @@ function compute() {
     calTitle: (care ? "休業カレンダー（休業期間と通常業務の再開日）"
                     : "発注 → お届け カレンダー（通常リードタイム：ご発注から" + lead + "営業日）")
               + (hasPeriod ? "" : "（" + kind.label + "の目安・参考）"),
-    calHint: !hasPeriod ? "③ 休業期間を入力すると、この期間が色分け表示されます"
+    calHint: (!hasPeriod ? "③ 休業期間を入力すると、この期間が色分け表示されます。"
                   : (care ? "赤い斜線の日が休業日です。緑の枠の日から通常業務を再開いたします。"
-                         : "青の枠＝休暇前最終発注日／緑の枠＝お届けできる日／赤い斜線＝休業日"),
+                         : "青の枠＝休暇前最終発注日／緑の枠＝お届けできる日／赤い斜線＝休業日")
+              ) + "　カレンダーの日付をクリックすると、その日だけ休み⇔営業を切り替えられます。",
     cal: cal, legend: legend, hasCalendar: !!cal,
     hasNote: !!(state.note || "").trim(),
     staffText: state.staff || "担当者名",
@@ -831,7 +904,7 @@ function calendarHTML(cal) {
       cal.gridFs + ';font-weight:700;color:' + w.color + '">' + w.label + '</div>';
   }).join("");
   var cells = cal.cells.map(function (d) {
-    return '<div style="height:' + cal.cellH + ';box-sizing:border-box;border:' + d.border +
+    return '<div class="calcell" data-date="' + esc(d.key) + '" style="height:' + cal.cellH + ';box-sizing:border-box;border:' + d.border +
       ';margin:-0.2pt;background-color:' + d.bg + ';background-image:' + d.slash +
       ';padding:1.2mm 1.6mm;display:flex;flex-direction:column">' +
       '<div style="display:flex;align-items:baseline;justify-content:space-between;gap:1mm">' +
@@ -961,6 +1034,7 @@ function renderHistory() {
       state.staff = entry.staff || ""; state.mobile = entry.mobile || "";
       state.note = entry.note || "";
       state.issuedKichi = !!entry.issuedKichi;
+      state.dayOverride = (entry.dayOverride && typeof entry.dayOverride === "object") ? entry.dayOverride : {};
       state.fontCss = entry.fontCss || state.fontCss;
       render();
     };
@@ -990,7 +1064,8 @@ function fit() {
   var el = sheetEl.querySelector(".page");
   if (!el) return;
   var sig = [state.officeIdx, state.kind, state.audience, state.start, state.end,
-             state.note, state.fontCss, state.issued, state.issuedKichi].join("|");
+             state.note, state.fontCss, state.issued, state.issuedKichi,
+             JSON.stringify(state.dayOverride)].join("|");
   if (sig !== lastSig) {
     lastSig = sig;
     if (state.fitStep) { state.fitStep = 0; render(); return; }
@@ -1021,11 +1096,18 @@ function init() {
   state.staff = saved.staff || "";
   state.mobile = saved.mobile || "";
 
-  $("fKind").onchange = function (e) { state.kind = e.target.value; render(); };
+  $("fKind").onchange = function (e) {
+    state.kind = e.target.value;
+    state.dayOverride = {};
+    var baseYear = (parse(state.issued) || new Date()).getFullYear();
+    var range = kindDefaultRange(state.kind, baseYear);
+    if (range) { state.start = range.start; state.end = range.end; }
+    render();
+  };
   $("segCare").onclick = function () { state.audience = "care"; render(); };
   $("segHosp").onclick = function () { state.audience = "hospital"; render(); };
-  $("fStart").onchange = function (e) { state.start = e.target.value; render(); };
-  $("fEnd").onchange = function (e) { state.end = e.target.value; render(); };
+  $("fStart").onchange = function (e) { state.start = e.target.value; state.dayOverride = {}; render(); };
+  $("fEnd").onchange = function (e) { state.end = e.target.value; state.dayOverride = {}; render(); };
   $("fIssued").onchange = function (e) { state.issued = e.target.value; render(); };
   $("btnIssuedKichi").onclick = function () { state.issuedKichi = !state.issuedKichi; render(); };
   $("fNote").oninput = function (e) { state.note = e.target.value; render(); };
@@ -1049,11 +1131,28 @@ function init() {
       officeName: v.office.name, kind: state.kind, audience: state.audience,
       start: state.start, end: state.end,
       staff: state.staff, mobile: state.mobile, note: state.note,
-      issuedKichi: state.issuedKichi, fontCss: state.fontCss, savedAt: Date.now()
+      issuedKichi: state.issuedKichi, dayOverride: state.dayOverride,
+      fontCss: state.fontCss, savedAt: Date.now()
     };
     writeHistory([entry].concat(state.history).slice(0, 30));
     renderHistory();
   };
+
+  sheetEl.addEventListener("click", function (e) {
+    var cell = e.target.closest ? e.target.closest("[data-date]") : null;
+    if (!cell || !state.start || !state.end) return;
+    var key = cell.getAttribute("data-date");
+    var s = parse(state.start), en = parse(state.end);
+    var d = parse(key);
+    var withinRange = s && en && d >= s && d <= en;
+    var cur = state.dayOverride[key];
+    if (!cur) {
+      state.dayOverride[key] = withinRange ? "open" : "closed";
+    } else {
+      delete state.dayOverride[key];
+    }
+    render();
+  });
 
   renderHistory();
   render();
