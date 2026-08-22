@@ -818,9 +818,8 @@ function compute() {
       marks[key] = { tag: "休業", bg: "#f7ddd4", color: "#a8391f", fg: "#8f2f1c", closed: true };
     });
     if (!care && deadline)      marks[deadline]      = { tag: "発注締切", bg: "#e8ecf7", color: "#3c5bb5", fg: "#33499a", strong: true, tagBig: true };
-    if (minClosed && marks[minClosed]) marks[minClosed].tag = "休業開始";
     if (maxClosed && marks[maxClosed] && maxClosed !== minClosed) marks[maxClosed].tag = "休業最終日";
-    if (resumeISO) marks[resumeISO] = { tag: "営業開始", bg: "#dcefe0", color: "#1f6b3c", fg: "#17542e", strong: true };
+    if (resumeISO) marks[resumeISO] = { tag: "営業開始", bg: "#ffffff", color: "#4a4a46" };
 
     var s = parse(startISO), e = parse(endISO);
     if (s && e && s <= e) {
@@ -857,10 +856,8 @@ function compute() {
     "以降）のお届けとなりますので、あらかじめご了承ください。退院日・入所日のご予定に合わせ、お早めのご連絡をお願い申し上げます。";
 
   var legend = !hasPeriod ? [] : (care
-    ? [{ label: "休業日（受付を休止します）", bg: "#f7ddd4", border: "#c4664c" },
-       { label: "営業開始日（通常業務再開）", bg: "#dcefe0", border: "#1f6b3c" }]
+    ? [{ label: "休業日（受付を休止します）", bg: "#f7ddd4", border: "#c4664c" }]
     : [{ label: "休業日",           bg: "#f7ddd4", border: "#c4664c" },
-       { label: "営業開始日",       bg: "#dcefe0", border: "#1f6b3c" },
        { label: "休暇前最終発注日", bg: "#e8ecf7", border: "#3c5bb5" }]);
   if (hasOpenGap) legend = legend.concat([{ label: "営業（期間中の通常営業日）", bg: "#eef6ee", border: "#2f7a4a" }]);
 
@@ -884,7 +881,7 @@ function compute() {
                     : "休業カレンダー（休業期間と休暇前最終発注日）")
               + (hasPeriod ? "" : "（" + kind.label + "の目安・参考）"),
     calHint: (!hasPeriod ? "③ 休業期間を入力すると、この期間が色分け表示されます。"
-                  : (care ? "赤い斜線の日が休業日です。緑の枠の日から通常業務を再開いたします。"
+                  : (care ? "赤い斜線の日が休業日です。「営業開始」の日から通常業務を再開いたします。"
                          : "青の枠＝休暇前最終発注日／赤い斜線＝休業日")
               ) + "　カレンダーの日付をクリックすると、その日だけ休み⇔営業を切り替えられます。",
     cal: cal, legend: legend, hasCalendar: !!cal,
