@@ -543,7 +543,8 @@ var state = {
   start: "", end: "", staff: "", mobile: "",
   issued: iso(new Date()), issuedKichi: false, note: "", fitStep: 0,
   fontCss: FONTS[0].css, history: [], staffMap: {},
-  dayOverride: {} /* isoDate -> "open" | "closed"（カレンダーをクリックした個別の休み／出勤の上書き） */
+  dayOverride: {}, /* isoDate -> "open" | "closed"（カレンダーをクリックした個別の休み／出勤の上書き） */
+  deadlineOverride: null /* isoDate（カレンダーをダブルクリックして指定した休暇前最終発注日） */
 };
 
 function fmtKichi(s) {
@@ -806,7 +807,7 @@ function compute() {
 
   var resumeISO = maxClosed ? nextBizOnOrAfter(shift(maxClosed, 1), startISO, endISO) : "";
   var lastDelivery = minClosed ? prevBizOnOrBefore(shift(minClosed, -1), startISO, endISO) : "";
-  var deadline = lastDelivery ? stepBiz(lastDelivery, -lead, startISO, endISO) : "";
+  var deadline = state.deadlineOverride || (lastDelivery ? stepBiz(lastDelivery, -lead, startISO, endISO) : "");
   var firstDelivery = resumeISO ? stepBiz(resumeISO, lead, startISO, endISO) : "";
 
   var periodText = hasPeriod ? formatClosedRanges(closedRanges) : "　　月　　日 〜 　　月　　日";
@@ -878,10 +879,10 @@ function compute() {
     calTitle: (care ? "休業カレンダー（休業期間と通常業務の再開日）"
                     : "休業カレンダー（休業期間と休暇前最終発注日）")
               + (hasPeriod ? "" : "（" + kind.label + "の目安・参考）"),
-    calHint: (!hasPeriod ? "③ 休業期間を入力すると、この期間が色分け表示されます。"
-                  : (care ? "赤い斜線の日が休業日です。「営業開始」の日から通常業務を再開いたします。"
-                         : "青の枠＝休暇前最終発注日／赤い斜線＝休業日")
-              ) + "　カレンダーの日付をクリックすると、その日だけ休み⇔営業を切り替えられます。",
+    calHint: !hasPeriod ? "③ 休業期間を入力すると、この期間が色分け表示されます。"
+      : (care
+        ? "赤い斜線の日が休業日です。「営業開始」の日から通常業務を再開いたします。日付をクリックすると、その日だけ休み⇔営業を切り替えられます。"
+        : "赤い斜線の日が休業日、青い枠の日が休暇前最終発注日です。日付をクリックすると休み⇔営業を切り替え、ダブルクリックするとその日を休暇前最終発注日に設定できます。"),
     cal: cal, legend: legend, hasCalendar: !!cal,
     hasNote: !!(state.note || "").trim(),
     staffText: state.staff || "担当者名",
@@ -1031,6 +1032,7 @@ function renderHistory() {
       state.note = entry.note || "";
       state.issuedKichi = !!entry.issuedKichi;
       state.dayOverride = (entry.dayOverride && typeof entry.dayOverride === "object") ? entry.dayOverride : {};
+      state.deadlineOverride = entry.deadlineOverride || null;
       state.fontCss = entry.fontCss || state.fontCss;
       render();
     };
@@ -1060,7 +1062,7 @@ function fit() {
   var el = sheetEl.querySelector(".page");
   if (!el) return;
   var sig = [state.officeIdx, state.kind, state.audience, state.start, state.end,
-             state.note, state.fontCss, state.issued, state.issuedKichi,
+             state.note, state.fontCss, state.issued, state.issuedKichi, state.deadlineOverride,
              JSON.stringify(state.dayOverride)].join("|");
   if (sig !== lastSig) {
     lastSig = sig;
@@ -1095,6 +1097,7 @@ function init() {
   $("fKind").onchange = function (e) {
     state.kind = e.target.value;
     state.dayOverride = {};
+    state.deadlineOverride = null;
     var baseYear = (parse(state.issued) || new Date()).getFullYear();
     var range = kindDefaultRange(state.kind, baseYear);
     if (range) { state.start = range.start; state.end = range.end; }
@@ -1102,8 +1105,8 @@ function init() {
   };
   $("segCare").onclick = function () { state.audience = "care"; render(); };
   $("segHosp").onclick = function () { state.audience = "hospital"; render(); };
-  $("fStart").onchange = function (e) { state.start = e.target.value; state.dayOverride = {}; render(); };
-  $("fEnd").onchange = function (e) { state.end = e.target.value; state.dayOverride = {}; render(); };
+  $("fStart").onchange = function (e) { state.start = e.target.value; state.dayOverride = {}; state.deadlineOverride = null; render(); };
+  $("fEnd").onchange = function (e) { state.end = e.target.value; state.dayOverride = {}; state.deadlineOverride = null; render(); };
   $("fIssued").onchange = function (e) { state.issued = e.target.value; render(); };
   $("btnIssuedKichi").onclick = function () { state.issuedKichi = !state.issuedKichi; render(); };
   $("fNote").oninput = function (e) { state.note = e.target.value; render(); };
@@ -1128,16 +1131,16 @@ function init() {
       start: state.start, end: state.end,
       staff: state.staff, mobile: state.mobile, note: state.note,
       issuedKichi: state.issuedKichi, dayOverride: state.dayOverride,
+      deadlineOverride: state.deadlineOverride,
       fontCss: state.fontCss, savedAt: Date.now()
     };
     writeHistory([entry].concat(state.history).slice(0, 30));
     renderHistory();
   };
 
-  sheetEl.addEventListener("click", function (e) {
-    var cell = e.target.closest ? e.target.closest("[data-date]") : null;
-    if (!cell || !state.start || !state.end) return;
-    var key = cell.getAttribute("data-date");
+  var calClickTimer = null;
+  function toggleDayOpenClosed(key) {
+    if (!state.start || !state.end) return;
     var s = parse(state.start), en = parse(state.end);
     var d = parse(key);
     var withinRange = s && en && d >= s && d <= en;
@@ -1148,6 +1151,24 @@ function init() {
       delete state.dayOverride[key];
     }
     render();
+  }
+  function toggleDeadlineDate(key) {
+    if (state.audience !== "hospital" || !state.start || !state.end) return;
+    state.deadlineOverride = (state.deadlineOverride === key) ? null : key;
+    render();
+  }
+  sheetEl.addEventListener("click", function (e) {
+    var cell = e.target.closest ? e.target.closest("[data-date]") : null;
+    if (!cell) return;
+    if (calClickTimer) { clearTimeout(calClickTimer); calClickTimer = null; return; }
+    var key = cell.getAttribute("data-date");
+    calClickTimer = setTimeout(function () { calClickTimer = null; toggleDayOpenClosed(key); }, 280);
+  });
+  sheetEl.addEventListener("dblclick", function (e) {
+    var cell = e.target.closest ? e.target.closest("[data-date]") : null;
+    if (!cell) return;
+    if (calClickTimer) { clearTimeout(calClickTimer); calClickTimer = null; }
+    toggleDeadlineDate(cell.getAttribute("data-date"));
   });
 
   renderHistory();
