@@ -879,9 +879,9 @@ function compute() {
     issuedText: state.issued ? (state.issuedKichi ? fmtKichi(state.issued) : fmt(state.issued)) : "　　　年　　月　　日",
     addresseeLine: care ? "居宅介護支援事業所　ご担当者様" : "病院・施設　ご担当者様",
     docTitle: kind.title, bodyText: care ? bodyCare : bodyHosp,
-    audienceHint: care ? "休業カレンダー＋緊急連絡の案内が付きます" : "休暇前最終発注日・発注→お届けカレンダーが付きます",
+    audienceHint: care ? "休業カレンダー＋緊急連絡の案内が付きます" : "休暇前最終発注日つきの休業カレンダーが付きます",
     calTitle: (care ? "休業カレンダー（休業期間と通常業務の再開日）"
-                    : "発注 → お届け カレンダー")
+                    : "休業カレンダー（休業期間と休暇前最終発注日）")
               + (hasPeriod ? "" : "（" + kind.label + "の目安・参考）"),
     calHint: (!hasPeriod ? "③ 休業期間を入力すると、この期間が色分け表示されます。"
                   : (care ? "赤い斜線の日が休業日です。緑の枠の日から通常業務を再開いたします。"
@@ -936,8 +936,8 @@ function sheetHTML(v) {
   h += '<div style="display:flex;gap:6mm;align-items:baseline"><div style="width:34mm;flex:none;font-weight:600;letter-spacing:.12em">休業期間</div>' +
        '<div style="font-size:11pt;font-weight:600">' + v.periodText + '</div></div>';
   if (!v.care) {
-    h += '<div style="display:flex;gap:6mm;align-items:baseline"><div style="width:34mm;flex:none;font-weight:600;letter-spacing:.12em">休暇前最終発注日</div>' +
-         '<div><span style="font-size:11pt;font-weight:600">' + v.deadlineText + '</span>' +
+    h += '<div style="display:flex;gap:6mm;align-items:baseline;color:#a12b2b"><div style="width:34mm;flex:none;font-weight:600;letter-spacing:.12em">休暇前最終発注日</div>' +
+         '<div><span style="font-size:11pt;font-weight:700">' + v.deadlineText + '</span>' +
          '<span style="font-size:9.5pt">　まで（これ以降のご注文は休業明けの納期となります）</span></div></div>';
   }
   h += '</div>';
