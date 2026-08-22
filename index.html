@@ -873,7 +873,7 @@ function compute() {
     lastDeliveryText: lastDelivery ? fmt(lastDelivery) : "　　月　　日",
     firstDeliveryText: firstDelivery ? fmt(firstDelivery) : "　　月　　日",
     issuedText: state.issued ? (state.issuedKichi ? fmtKichi(state.issued) : fmt(state.issued)) : "　　　年　　月　　日",
-    addresseeLine: care ? "居宅介護支援事業所　ご担当者様" : "病院・施設　ご担当者様",
+    addresseeLine: care ? "居宅介護支援事業所及び包括支援センター　様" : "病院・施設　ご担当者様",
     docTitle: kind.title, bodyText: care ? bodyCare : bodyHosp,
     audienceHint: care ? "休業カレンダー＋緊急連絡の案内が付きます" : "休暇前最終発注日つきの休業カレンダーが付きます",
     calTitle: (care ? "休業カレンダー（休業期間と通常業務の再開日）"
