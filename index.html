@@ -66,7 +66,9 @@
   .sheetwrap{flex:1;overflow:auto;background:#e9e7e1;padding:24px;display:flex;justify-content:center;align-items:flex-start}
   .page{width:210mm;height:297mm;flex:none;background:#fff;box-shadow:0 2px 10px rgba(20,20,19,.12);
     overflow:hidden;padding:10mm 14mm;color:#161615;font-size:9.5pt;line-height:1.52;
-    display:flex;flex-direction:column}
+    display:flex;flex-direction:column;
+    -webkit-print-color-adjust:exact;print-color-adjust:exact;color-adjust:exact}
+  .page *{-webkit-print-color-adjust:exact;print-color-adjust:exact;color-adjust:exact}
   .page>*{flex:0 0 auto}
 
   /* ============================================================
@@ -701,6 +703,7 @@ function buildCalendarWindow(marks, f, fallbackStartISO, fallbackEndISO) {
   var cellMm = 15.5 * f;
   var numFs = (14.5 * tf).toFixed(1) + "pt";
   var tagFs = (8.8 * tf).toFixed(1) + "pt";
+  var tagFsBig = (10.6 * tf).toFixed(1) + "pt";
   var gridFs = (10.5 * tf).toFixed(1) + "pt";
 
   var cells = [];
@@ -714,7 +717,7 @@ function buildCalendarWindow(marks, f, fallbackStartISO, fallbackEndISO) {
     var tag = "", tagColor = "transparent", weight = "500";
     var border = "0.4pt solid #d8d5cd", slash = "none";
     if (mark) {
-      bg = mark.bg; tagColor = mark.color; weight = "700";
+      bg = mark.bg; tagColor = mark.color; weight = "600";
       tag = mark.tag;
       if (mark.fg) fg = mark.fg;
       if (mark.closed) {
@@ -727,7 +730,8 @@ function buildCalendarWindow(marks, f, fallbackStartISO, fallbackEndISO) {
       if (holidayName) { fg = "#c0392b"; tag = "祝"; tagColor = "#c0392b"; }
     }
     var label = (d.getMonth() + 1) + "/" + d.getDate();
-    cells.push({ key: key, label: label, tag: tag, bg: bg, fg: fg, tagColor: tagColor, weight: weight, border: border, slash: slash });
+    var cellTagFs = mark && mark.tagBig ? tagFsBig : tagFs;
+    cells.push({ key: key, label: label, tag: tag, bg: bg, fg: fg, tagColor: tagColor, weight: weight, border: border, slash: slash, tagFs: cellTagFs });
     d.setDate(d.getDate() + 1);
   }
 
@@ -813,9 +817,7 @@ function compute() {
     Object.keys(closedSet).forEach(function (key) {
       marks[key] = { tag: "休業", bg: "#f7ddd4", color: "#a8391f", fg: "#8f2f1c", closed: true };
     });
-    if (!care && lastDelivery)  marks[lastDelivery]  = { tag: "お届け",   bg: "#e6f0e8", color: "#2f7a4a", fg: "#245c39", strong: true };
-    if (!care && firstDelivery) marks[firstDelivery] = { tag: "お届け",   bg: "#e6f0e8", color: "#2f7a4a", fg: "#245c39", strong: true };
-    if (!care && deadline)      marks[deadline]      = { tag: "発注締切", bg: "#e8ecf7", color: "#3c5bb5", fg: "#33499a", strong: true };
+    if (!care && deadline)      marks[deadline]      = { tag: "発注締切", bg: "#e8ecf7", color: "#3c5bb5", fg: "#33499a", strong: true, tagBig: true };
     if (minClosed && marks[minClosed]) marks[minClosed].tag = "休業開始";
     if (maxClosed && marks[maxClosed] && maxClosed !== minClosed) marks[maxClosed].tag = "休業最終日";
     if (resumeISO) marks[resumeISO] = { tag: "営業開始", bg: "#dcefe0", color: "#1f6b3c", fg: "#17542e", strong: true };
@@ -846,7 +848,7 @@ function compute() {
 
   var greet = "拝啓　" + kind.greet + "、";
   var bodyCare = greet + "平素は格別のお引き立てを賜り、厚く御礼申し上げます。さて、弊社" + office.name +
-    "では、下記の期間を" + kind.body + "休業とさせていただきます。休業期間中はご不便をおかけいたしますが、何卒ご了承のほどお願い申し上げます。なお、期間中も緊急のご依頼につきましては下記の連絡先にて承ります。";
+    "では、下記の期間を" + kind.body + "休業とさせていただきます。休業期間中はご不便をおかけいたしますが、何卒ご了承のほどお願い申し上げます。";
   var bodyHosp = greet + "平素は格別のお引き立てを賜り、厚く御礼申し上げます。さて、弊社" + office.name +
     "では、下記の期間を" + kind.body + "休業とさせていただきます。福祉用具のご発注につきましては、お届けまでに通常" + lead +
     "営業日を頂戴しております。休業前のお届けをご希望の場合は、" + (deadline ? fmtShort(deadline) : "休業前") +
@@ -859,8 +861,7 @@ function compute() {
        { label: "営業開始日（通常業務再開）", bg: "#dcefe0", border: "#1f6b3c" }]
     : [{ label: "休業日",           bg: "#f7ddd4", border: "#c4664c" },
        { label: "営業開始日",       bg: "#dcefe0", border: "#1f6b3c" },
-       { label: "休暇前最終発注日", bg: "#e8ecf7", border: "#3c5bb5" },
-       { label: "お届け日",         bg: "#e6f0e8", border: "#2f7a4a" }]);
+       { label: "休暇前最終発注日", bg: "#e8ecf7", border: "#3c5bb5" }]);
   if (hasOpenGap) legend = legend.concat([{ label: "営業（期間中の通常営業日）", bg: "#eef6ee", border: "#2f7a4a" }]);
 
   var sD = parse(startISO), eD = parse(endISO);
@@ -880,11 +881,11 @@ function compute() {
     docTitle: kind.title, bodyText: care ? bodyCare : bodyHosp,
     audienceHint: care ? "休業カレンダー＋緊急連絡の案内が付きます" : "休暇前最終発注日・発注→お届けカレンダーが付きます",
     calTitle: (care ? "休業カレンダー（休業期間と通常業務の再開日）"
-                    : "発注 → お届け カレンダー（通常リードタイム：ご発注から" + lead + "営業日）")
+                    : "発注 → お届け カレンダー")
               + (hasPeriod ? "" : "（" + kind.label + "の目安・参考）"),
     calHint: (!hasPeriod ? "③ 休業期間を入力すると、この期間が色分け表示されます。"
                   : (care ? "赤い斜線の日が休業日です。緑の枠の日から通常業務を再開いたします。"
-                         : "青の枠＝休暇前最終発注日／緑の枠＝お届けできる日／赤い斜線＝休業日")
+                         : "青の枠＝休暇前最終発注日／赤い斜線＝休業日")
               ) + "　カレンダーの日付をクリックすると、その日だけ休み⇔営業を切り替えられます。",
     cal: cal, legend: legend, hasCalendar: !!cal,
     hasNote: !!(state.note || "").trim(),
@@ -909,7 +910,7 @@ function calendarHTML(cal) {
       ';padding:1.2mm 1.6mm;display:flex;flex-direction:column">' +
       '<div style="display:flex;align-items:baseline;justify-content:space-between;gap:1mm">' +
       '<div style="font-size:' + cal.numFs + ';font-weight:' + d.weight + ';color:' + d.fg + ';line-height:1.05">' + d.label + '</div>' +
-      '<div style="font-size:' + cal.tagFs + ';font-weight:700;color:' + d.tagColor +
+      '<div style="font-size:' + d.tagFs + ';font-weight:700;color:' + d.tagColor +
       ';text-align:right;line-height:1.1;white-space:nowrap">' + esc(d.tag) + '</div>' +
       '</div></div>';
   }).join("");
