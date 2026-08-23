@@ -31,7 +31,7 @@
   .tn-mode:hover{background:rgba(255,255,255,.12)}
   .tn-mode.on{background:#fff;color:#14203a;border-color:#fff}
   .tn-mode.on:hover{background:#fff}
-  .tn-office{margin-left:auto;display:flex;align-items:center;gap:8px;font-size:12px;color:#dbe3ef}
+  .tn-office{display:flex;align-items:center;gap:8px;font-size:12px;color:#dbe3ef}
   .tn-office select{padding:7px 10px;border-radius:5px;border:1px solid #3a4a68;background:#1c2c4a;color:#fff;font-size:13px;min-width:170px}
 
   #appBody{flex:1;min-height:0;display:flex;flex-direction:column}
@@ -249,6 +249,15 @@
             <input class="ctl" style="flex:1" type="date" id="fEnd">
           </div>
           <div class="err" id="dateError" style="display:none">終了日が開始日より前になっています。日付をご確認ください。</div>
+        </div>
+
+        <div class="fld" id="deadlineFld" hidden>
+          <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px">
+            <label class="lbl" for="fDeadline" style="margin:0">休暇前最終発注日</label>
+            <button type="button" id="btnDeadlineReset" class="btn-sub" style="padding:2px 9px;font-size:11px;border-radius:5px" hidden>自動計算に戻す</button>
+          </div>
+          <input class="ctl" type="date" id="fDeadline">
+          <div class="hint">空欄（自動計算）のままでも、カレンダーの日付をダブルクリックしても指定できます</div>
         </div>
 
         <div class="fld">
@@ -847,12 +856,12 @@ function compute() {
   var cal = buildCalendarWindow(marks, f, refRange && refRange.start, refRange && refRange.end);
 
   var greet = "拝啓　" + kind.greet + "、";
-  var bodyCare = greet + "平素は格別のお引き立てを賜り、厚く御礼申し上げます。さて、弊社" + office.name +
-    "では、下記の期間を" + kind.body + "休業とさせていただきます。休業期間中はご不便をおかけいたしますが、何卒ご了承のほどお願い申し上げます。";
-  var bodyHosp = greet + "平素は格別のお引き立てを賜り、厚く御礼申し上げます。さて、弊社" + office.name +
-    "では、下記の期間を" + kind.body + "休業とさせていただきます。休業前のお届けをご希望の場合は、" + (deadline ? fmtShort(deadline) : "休業前") +
+  var bodyCare = greet + "平素は格別のお引き立てを賜り、厚く御礼申し上げます。さて、弊社では、" +
+    "下記の期間を" + kind.body + "休業とさせていただきます。休業期間中はご不便をおかけいたしますが、何卒ご了承のほどお願い申し上げます。";
+  var bodyHosp = greet + "平素は格別のお引き立てを賜り、厚く御礼申し上げます。さて、弊社では、" +
+    "下記の期間を" + kind.body + "休業とさせていただきます。休業前のお届けをご希望の場合は、" + (deadline ? fmtShort(deadline) : "休業前") +
     "（休暇前最終発注日）までにご発注をお願いいたします。" + (deadline ? fmtShort(deadline) : "上記の日") +
-    "以降のご注文につきましては、休業明けの納期となりますので、あらかじめご了承ください。退院日・入所日のご予定に合わせ、お早めのご連絡をお願い申し上げます。";
+    "以降のご注文につきましては、休業明けの納期となりますので、あらかじめご了承ください。";
 
   var legend = !hasPeriod ? [] : (care
     ? [{ label: "休業日（受付を休止します）", bg: "#f7ddd4", border: "#c4664c" }]
@@ -992,6 +1001,7 @@ function syncPanel(v) {
   setVal($("fFont"), state.fontCss);
   setVal($("fIssued"), state.issued);
   setVal($("fNote"), state.note);
+  setVal($("fDeadline"), state.deadlineOverride || v.deadline || "");
 
   $("segCare").className = "seg" + (v.care ? " on" : "");
   $("segHosp").className = "seg" + (v.care ? "" : " on");
@@ -999,6 +1009,8 @@ function syncPanel(v) {
   $("officeInfo").textContent = v.office.address + "／TEL " + v.office.tel;
   $("dateError").style.display = v.dateError ? "" : "none";
   $("btnIssuedKichi").classList.toggle("on", !!state.issuedKichi);
+  $("deadlineFld").hidden = v.care;
+  $("btnDeadlineReset").hidden = !state.deadlineOverride;
 }
 
 function renderHistory() {
@@ -1107,6 +1119,8 @@ function init() {
   $("segHosp").onclick = function () { state.audience = "hospital"; render(); };
   $("fStart").onchange = function (e) { state.start = e.target.value; state.dayOverride = {}; state.deadlineOverride = null; render(); };
   $("fEnd").onchange = function (e) { state.end = e.target.value; state.dayOverride = {}; state.deadlineOverride = null; render(); };
+  $("fDeadline").onchange = function (e) { state.deadlineOverride = e.target.value || null; render(); };
+  $("btnDeadlineReset").onclick = function () { state.deadlineOverride = null; render(); };
   $("fIssued").onchange = function (e) { state.issued = e.target.value; render(); };
   $("btnIssuedKichi").onclick = function () { state.issuedKichi = !state.issuedKichi; render(); };
   $("fNote").oninput = function (e) { state.note = e.target.value; render(); };
