@@ -26,11 +26,11 @@
   .tn-brand{margin-right:6px}
   .tn-co{font-size:10px;letter-spacing:.14em;color:#aebbd1}
   .tn-title{font-size:15px;font-weight:700;margin-top:2px}
-  .tn-modes{display:flex;gap:8px}
-  .tn-mode{padding:8px 16px;border-radius:6px;border:1px solid rgba(255,255,255,.35);background:transparent;color:#fff;font-size:13px;font-weight:700;cursor:pointer}
-  .tn-mode:hover{background:rgba(255,255,255,.12)}
-  .tn-mode.on{background:#fff;color:#14203a;border-color:#fff}
-  .tn-mode.on:hover{background:#fff}
+  .tn-modes{display:flex;gap:2px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.2);border-radius:9px;padding:3px}
+  .tn-mode{padding:7px 16px;border-radius:6px;border:none;background:transparent;color:#b9c3d6;font-size:13px;font-weight:700;cursor:pointer;transition:background .15s,color .15s}
+  .tn-mode:hover{background:rgba(255,255,255,.14);color:#fff}
+  .tn-mode.on{background:#fff;color:#14203a;box-shadow:0 1px 3px rgba(0,0,0,.25)}
+  .tn-mode.on:hover{background:#fff;color:#14203a}
   .tn-office{display:flex;align-items:center;gap:8px;font-size:12px;color:#dbe3ef}
   .tn-office select{padding:7px 10px;border-radius:5px;border:1px solid #3a4a68;background:#1c2c4a;color:#fff;font-size:13px;min-width:170px}
 
@@ -882,7 +882,7 @@ function compute() {
     lastDeliveryText: lastDelivery ? fmt(lastDelivery) : "　　月　　日",
     firstDeliveryText: firstDelivery ? fmt(firstDelivery) : "　　月　　日",
     issuedText: state.issued ? (state.issuedKichi ? fmtKichi(state.issued) : fmt(state.issued)) : "　　　年　　月　　日",
-    addresseeLine: care ? "居宅介護支援事業所及び包括支援センター　様" : "病院・施設　ご担当者様",
+    addresseeLine: care ? "居宅介護支援事業所及び地域包括支援センター　様" : "病院・施設　ご担当者様",
     docTitle: kind.title, bodyText: care ? bodyCare : bodyHosp,
     audienceHint: care ? "休業カレンダー＋緊急連絡の案内が付きます" : "休暇前最終発注日つきの休業カレンダーが付きます",
     calTitle: (care ? "休業カレンダー（休業期間と通常業務の再開日）"
