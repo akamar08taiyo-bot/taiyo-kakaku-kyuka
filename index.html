@@ -977,7 +977,7 @@ function sheetHTML(v) {
     h += '<div style="margin-top:' + v.calTop + ';border-top:0.8pt solid #c9c6be;padding-top:' + v.calPadTop + '">';
     h += '<div style="display:flex;align-items:baseline;justify-content:space-between;gap:4mm">' +
          '<div style="font-size:10.5pt;font-weight:700;letter-spacing:.08em">' + esc(v.calTitle) + '</div>' +
-         '<div style="font-size:9pt;color:#6f6b63">' + esc(v.cal.rangeLabel) + '</div></div>';
+         '<div data-noprint style="font-size:9pt;color:#6f6b63">' + esc(v.cal.rangeLabel) + '</div></div>';
     h += '<div' + (v.hasPeriod ? '' : ' data-noprint') + ' style="margin-top:1mm;font-size:9pt;color:#4a4a46">' + esc(v.calHint) + '</div>';
     if (v.calInteractionHint) {
       h += '<div data-noprint style="margin-top:0.6mm;font-size:8.5pt;color:#8a857b">' + esc(v.calInteractionHint) + '</div>';
