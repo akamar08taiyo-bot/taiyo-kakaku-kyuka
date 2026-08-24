@@ -258,7 +258,7 @@
 
         <div class="fld" id="deadlineFld" hidden>
           <label style="display:flex;align-items:center;gap:7px;font-size:12.5px;color:#55524b;cursor:pointer">
-            <input type="checkbox" id="fShowDeadline" checked style="width:14px;height:14px">
+            <input type="checkbox" id="fShowDeadline" style="width:14px;height:14px">
             休暇前最終発注日を表示する
           </label>
           <div id="deadlineDateWrap" style="display:flex;flex-direction:column;gap:7px">
@@ -560,7 +560,7 @@ var state = {
   fontCss: FONTS[0].css, history: [], staffMap: {},
   dayOverride: {}, /* isoDate -> "open" | "closed"（カレンダーをクリックした個別の休み／出勤の上書き） */
   deadlineOverride: null, /* isoDate（カレンダーをダブルクリックして指定した休暇前最終発注日） */
-  showDeadline: true /* 病院・施設向けで休暇前最終発注日そのものを表示するかどうか */
+  showDeadline: false /* 病院・施設向けで休暇前最終発注日そのものを表示するかどうか（デフォルトは非表示） */
 };
 
 function fmtKichi(s) {
@@ -723,6 +723,17 @@ function buildCalendarWindow(marks, f, fallbackStartISO, fallbackEndISO) {
   var tagFsBig = (10.6 * tf).toFixed(1) + "pt";
   var gridFs = (10.5 * tf).toFixed(1) + "pt";
 
+  function isMarkClosed(dateObj) {
+    var m = marks[iso(dateObj)];
+    return !!(m && m.closed);
+  }
+  function nearestWeekdayClosed(dateObj, dir) {
+    var x = new Date(dateObj.getTime());
+    var guard = 0;
+    do { x.setDate(x.getDate() + dir); guard++; } while ((x.getDay() === 0 || x.getDay() === 6) && guard < 3);
+    return isMarkClosed(x);
+  }
+
   var cells = [];
   var d = new Date(rangeStart.getTime());
   for (var i = 0; i < totalDays; i++) {
@@ -745,11 +756,13 @@ function buildCalendarWindow(marks, f, fallbackStartISO, fallbackEndISO) {
     } else {
       var holidayName = jpHolidayName(d);
       var isWeekend = col === 5 || col === 6;
-      if (holidayName || isWeekend) {
+      var weekendConnected = isWeekend && (nearestWeekdayClosed(d, -1) || nearestWeekdayClosed(d, 1));
+      if (holidayName || weekendConnected) {
         bg = "#f7ddd4";
         border = "0.6pt solid #c4664c";
         slash = "repeating-linear-gradient(135deg, rgba(168,58,34,0.22) 0 2.6px, rgba(168,58,34,0) 2.6px 7.5px)";
-        if (holidayName) { fg = "#8f2f1c"; tag = "祝"; tagColor = "#a8391f"; weight = "600"; }
+        fg = "#8f2f1c"; tagColor = "#a8391f"; weight = "600";
+        tag = holidayName ? "祝" : "休業";
       }
     }
     var label = (d.getMonth() + 1) + "/" + d.getDate();
@@ -902,9 +915,8 @@ function compute() {
     addresseeLine: care ? "居宅介護支援事業所及び地域包括支援センター　様" : "病院・施設　ご担当者様",
     docTitle: kind.title, bodyText: care ? bodyCare : bodyHosp,
     audienceHint: care ? "休業カレンダー＋緊急連絡の案内が付きます" : (showDeadline ? "休暇前最終発注日つきの休業カレンダーが付きます" : "休業カレンダーが付きます"),
-    calTitle: (care || !showDeadline ? "休業カレンダー（休業期間と通常業務の再開日）"
-                    : "休業カレンダー（休業期間と休暇前最終発注日）")
-              + (hasPeriod ? "" : "（" + kind.label + "の目安・参考）"),
+    calTitle: care || !showDeadline ? "休業カレンダー（休業期間と通常業務の再開日）"
+                    : "休業カレンダー（休業期間と休暇前最終発注日）",
     calHint: !hasPeriod ? "土曜・日曜・祝日はあらかじめ休業として表示されています。③ 休業期間を入力すると、その期間も色分け表示されます。"
       : (care || !showDeadline
         ? "赤い斜線の日が休業日です。「営業開始」の日から通常業務を再開いたします。"
@@ -1070,7 +1082,7 @@ function renderHistory() {
       state.issuedKichi = !!entry.issuedKichi;
       state.dayOverride = (entry.dayOverride && typeof entry.dayOverride === "object") ? entry.dayOverride : {};
       state.deadlineOverride = entry.deadlineOverride || null;
-      state.showDeadline = entry.showDeadline === undefined ? true : !!entry.showDeadline;
+      state.showDeadline = !!entry.showDeadline;
       state.fontCss = entry.fontCss || state.fontCss;
       render();
     };
