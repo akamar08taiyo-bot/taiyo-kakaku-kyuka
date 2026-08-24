@@ -1011,8 +1011,7 @@ function sheetHTML(v) {
        '<div style="font-size:9pt">TEL ' + esc(o.tel) + '　FAX ' + esc(o.fax) + '</div></div>';
   h += '<div style="text-align:right;line-height:1.45;white-space:nowrap">' +
        '<div style="font-size:8pt;letter-spacing:.1em;color:#4a4a46">担当</div>' +
-       '<div style="font-size:10.5pt;font-weight:700">' + esc(v.staffText) + '</div>' +
-       '<div style="font-size:10.5pt;font-weight:700">携帯 ' + esc(v.mobileText) + '</div>';
+       '<div style="font-size:10.5pt;font-weight:700">' + esc(v.staffText) + '　携帯 ' + esc(v.mobileText) + '</div>';
   if (v.needStaff) {
     h += '<span data-noprint style="display:inline-block;margin-top:1mm;background:#fff2b8;border:1px solid #e0c65a;font-size:8.5pt;padding:0.8mm 2mm;border-radius:2mm">担当者を入力してください</span>';
   }
