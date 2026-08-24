@@ -214,6 +214,11 @@
         <div class="hint" style="margin-top:10px">住所・TEL・FAX・所長名は自動で入ります<br><span id="officeInfo"></span></div>
       </div>
       <div class="pbody">
+        <div class="fld" style="flex-direction:row;align-items:center;gap:8px">
+          <label class="lbl" for="fFont" style="font-weight:400;color:#a5a09a;font-size:11px">書式</label>
+          <select class="ctl" id="fFont" style="flex:1;padding:6px 9px;font-size:12px;color:#8a857b"></select>
+        </div>
+
         <div class="fld">
           <label class="lbl" for="fIssued">発行日</label>
           <div style="display:flex;gap:6px">
@@ -252,12 +257,18 @@
         </div>
 
         <div class="fld" id="deadlineFld" hidden>
-          <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px">
-            <label class="lbl" for="fDeadline" style="margin:0">休暇前最終発注日</label>
-            <button type="button" id="btnDeadlineReset" class="btn-sub" style="padding:2px 9px;font-size:11px;border-radius:5px" hidden>自動計算に戻す</button>
+          <label style="display:flex;align-items:center;gap:7px;font-size:12.5px;color:#55524b;cursor:pointer">
+            <input type="checkbox" id="fShowDeadline" checked style="width:14px;height:14px">
+            休暇前最終発注日を表示する
+          </label>
+          <div id="deadlineDateWrap" style="display:flex;flex-direction:column;gap:7px">
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px">
+              <label class="lbl" for="fDeadline" style="margin:0">休暇前最終発注日</label>
+              <button type="button" id="btnDeadlineReset" class="btn-sub" style="padding:2px 9px;font-size:11px;border-radius:5px" hidden>自動計算に戻す</button>
+            </div>
+            <input class="ctl" type="date" id="fDeadline">
+            <div class="hint">空欄（自動計算）のままでも、カレンダーの日付をダブルクリックしても指定できます</div>
           </div>
-          <input class="ctl" type="date" id="fDeadline">
-          <div class="hint">空欄（自動計算）のままでも、カレンダーの日付をダブルクリックしても指定できます</div>
         </div>
 
         <div class="fld">
@@ -269,11 +280,6 @@
         <div class="fld">
           <label class="lbl" for="fNote">⑤ 追記（任意）</label>
           <textarea class="ctl" id="fNote" rows="3" style="font-size:13.5px;resize:vertical" placeholder="例：期間中のご納品依頼は8月8日までにお願いいたします。"></textarea>
-        </div>
-
-        <div class="fld" style="flex-direction:row;align-items:center;gap:8px">
-          <label class="lbl" for="fFont" style="font-weight:400;color:#a5a09a;font-size:11px">書式</label>
-          <select class="ctl" id="fFont" style="flex:1;padding:6px 9px;font-size:12px;color:#8a857b"></select>
         </div>
 
         <div style="border-top:1px solid #e8e5df;padding-top:16px;display:flex;flex-direction:column;gap:9px">
@@ -553,7 +559,8 @@ var state = {
   issued: iso(new Date()), issuedKichi: false, note: "", fitStep: 0,
   fontCss: FONTS[0].css, history: [], staffMap: {},
   dayOverride: {}, /* isoDate -> "open" | "closed"（カレンダーをクリックした個別の休み／出勤の上書き） */
-  deadlineOverride: null /* isoDate（カレンダーをダブルクリックして指定した休暇前最終発注日） */
+  deadlineOverride: null, /* isoDate（カレンダーをダブルクリックして指定した休暇前最終発注日） */
+  showDeadline: true /* 病院・施設向けで休暇前最終発注日そのものを表示するかどうか */
 };
 
 function fmtKichi(s) {
@@ -737,7 +744,13 @@ function buildCalendarWindow(marks, f, fallbackStartISO, fallbackEndISO) {
       if (mark.strong) border = "1.4pt solid " + mark.color;
     } else {
       var holidayName = jpHolidayName(d);
-      if (holidayName) { fg = "#c0392b"; tag = "祝"; tagColor = "#c0392b"; }
+      var isWeekend = col === 5 || col === 6;
+      if (holidayName || isWeekend) {
+        bg = "#f7ddd4";
+        border = "0.6pt solid #c4664c";
+        slash = "repeating-linear-gradient(135deg, rgba(168,58,34,0.22) 0 2.6px, rgba(168,58,34,0) 2.6px 7.5px)";
+        if (holidayName) { fg = "#8f2f1c"; tag = "祝"; tagColor = "#a8391f"; weight = "600"; }
+      }
     }
     var label = (d.getMonth() + 1) + "/" + d.getDate();
     var cellTagFs = mark && mark.tagBig ? tagFsBig : tagFs;
@@ -804,6 +817,7 @@ function compute() {
   var office = OFFICES[state.officeIdx] || OFFICES[0];
   var kind = KINDS[state.kind] || KINDS.OBON;
   var care = state.audience === "care";
+  var showDeadline = !care && !!state.showDeadline;
   var lead = leadDays();
 
   var startISO = state.start, endISO = state.end;
@@ -827,7 +841,7 @@ function compute() {
     Object.keys(closedSet).forEach(function (key) {
       marks[key] = { tag: "休業", bg: "#f7ddd4", color: "#a8391f", fg: "#8f2f1c", closed: true };
     });
-    if (!care && deadline)      marks[deadline]      = { tag: "発注締切", bg: "#e8ecf7", color: "#3c5bb5", fg: "#33499a", strong: true, tagBig: true };
+    if (showDeadline && deadline) marks[deadline]      = { tag: "発注締切", bg: "#e8ecf7", color: "#3c5bb5", fg: "#33499a", strong: true, tagBig: true };
     if (maxClosed && marks[maxClosed] && maxClosed !== minClosed) marks[maxClosed].tag = "休業最終日";
     if (resumeISO) marks[resumeISO] = { tag: "営業開始", bg: "#ffffff", color: "#4a4a46" };
 
@@ -858,21 +872,24 @@ function compute() {
   var greet = "拝啓　" + kind.greet + "、";
   var bodyCare = greet + "平素は格別のお引き立てを賜り、厚く御礼申し上げます。さて、弊社では、" +
     "下記の期間を" + kind.body + "休業とさせていただきます。休業期間中はご不便をおかけいたしますが、何卒ご了承のほどお願い申し上げます。";
-  var bodyHosp = greet + "平素は格別のお引き立てを賜り、厚く御礼申し上げます。さて、弊社では、" +
-    "下記の期間を" + kind.body + "休業とさせていただきます。休業前のお届けをご希望の場合は、" + (deadline ? fmtShort(deadline) : "休業前") +
-    "（休暇前最終発注日）までにご発注をお願いいたします。" + (deadline ? fmtShort(deadline) : "上記の日") +
-    "以降のご注文につきましては、休業明けの納期となりますので、あらかじめご了承ください。";
+  var bodyHosp = showDeadline
+    ? greet + "平素は格別のお引き立てを賜り、厚く御礼申し上げます。さて、弊社では、" +
+      "下記の期間を" + kind.body + "休業とさせていただきます。休業前のお届けをご希望の場合は、" + (deadline ? fmtShort(deadline) : "休業前") +
+      "（休暇前最終発注日）までにご発注をお願いいたします。" + (deadline ? fmtShort(deadline) : "上記の日") +
+      "以降のご注文につきましては、休業明けの納期となりますので、あらかじめご了承ください。"
+    : greet + "平素は格別のお引き立てを賜り、厚く御礼申し上げます。さて、弊社では、" +
+      "下記の期間を" + kind.body + "休業とさせていただきます。休業期間中はご不便をおかけいたしますが、何卒ご了承のほどお願い申し上げます。";
 
   var legend = !hasPeriod ? [] : (care
     ? [{ label: "休業日（受付を休止します）", bg: "#f7ddd4", border: "#c4664c" }]
-    : [{ label: "休業日",           bg: "#f7ddd4", border: "#c4664c" },
-       { label: "休暇前最終発注日", bg: "#e8ecf7", border: "#3c5bb5" }]);
+    : [{ label: "休業日", bg: "#f7ddd4", border: "#c4664c" }]
+      .concat(showDeadline ? [{ label: "休暇前最終発注日", bg: "#e8ecf7", border: "#3c5bb5" }] : []));
   if (hasOpenGap) legend = legend.concat([{ label: "営業（期間中の通常営業日）", bg: "#eef6ee", border: "#2f7a4a" }]);
 
   var sD = parse(startISO), eD = parse(endISO);
 
   return {
-    office: office, kind: kind, care: care, lead: lead, hasPeriod: hasPeriod,
+    office: office, kind: kind, care: care, lead: lead, hasPeriod: hasPeriod, showDeadline: showDeadline,
     startISO: startISO, endISO: endISO, resumeISO: resumeISO,
     lastDelivery: lastDelivery, deadline: deadline, firstDelivery: firstDelivery,
     dateError: !!(sD && eD && eD < sD),
@@ -884,14 +901,17 @@ function compute() {
     issuedText: state.issued ? (state.issuedKichi ? fmtKichi(state.issued) : fmt(state.issued)) : "　　　年　　月　　日",
     addresseeLine: care ? "居宅介護支援事業所及び地域包括支援センター　様" : "病院・施設　ご担当者様",
     docTitle: kind.title, bodyText: care ? bodyCare : bodyHosp,
-    audienceHint: care ? "休業カレンダー＋緊急連絡の案内が付きます" : "休暇前最終発注日つきの休業カレンダーが付きます",
-    calTitle: (care ? "休業カレンダー（休業期間と通常業務の再開日）"
+    audienceHint: care ? "休業カレンダー＋緊急連絡の案内が付きます" : (showDeadline ? "休暇前最終発注日つきの休業カレンダーが付きます" : "休業カレンダーが付きます"),
+    calTitle: (care || !showDeadline ? "休業カレンダー（休業期間と通常業務の再開日）"
                     : "休業カレンダー（休業期間と休暇前最終発注日）")
               + (hasPeriod ? "" : "（" + kind.label + "の目安・参考）"),
-    calHint: !hasPeriod ? "③ 休業期間を入力すると、この期間が色分け表示されます。"
-      : (care
-        ? "赤い斜線の日が休業日です。「営業開始」の日から通常業務を再開いたします。日付をクリックすると、その日だけ休み⇔営業を切り替えられます。"
-        : "赤い斜線の日が休業日、青い枠の日が休暇前最終発注日です。日付をクリックすると休み⇔営業を切り替え、ダブルクリックするとその日を休暇前最終発注日に設定できます。"),
+    calHint: !hasPeriod ? "土曜・日曜・祝日はあらかじめ休業として表示されています。③ 休業期間を入力すると、その期間も色分け表示されます。"
+      : (care || !showDeadline
+        ? "赤い斜線の日が休業日です。「営業開始」の日から通常業務を再開いたします。"
+        : "赤い斜線の日が休業日、青い枠の日が休暇前最終発注日です。"),
+    calInteractionHint: !hasPeriod ? ""
+      : (!care && showDeadline ? "日付をクリックすると休み⇔営業を切り替え、ダブルクリックするとその日を休暇前最終発注日に設定できます。（画面上のみ・印刷されません）"
+        : "日付をクリックすると、その日だけ休み⇔営業を切り替えられます。（画面上のみ・印刷されません）"),
     cal: cal, legend: legend, hasCalendar: !!cal,
     hasNote: !!(state.note || "").trim(),
     staffText: state.staff || "担当者名",
@@ -940,7 +960,7 @@ function sheetHTML(v) {
   h += '<div style="margin-top:2mm;border:1pt solid #2b2b29;padding:2.4mm 6mm;display:flex;flex-direction:column;gap:1.4mm">';
   h += '<div style="display:flex;gap:6mm;align-items:baseline"><div style="width:34mm;flex:none;font-weight:600;letter-spacing:.12em">休業期間</div>' +
        '<div style="font-size:11pt;font-weight:600">' + v.periodText + '</div></div>';
-  if (!v.care) {
+  if (v.showDeadline) {
     h += '<div style="display:flex;gap:6mm;align-items:baseline;color:#a12b2b"><div style="width:34mm;flex:none;font-weight:600;letter-spacing:.12em">休暇前最終発注日</div>' +
          '<div><span style="font-size:11pt;font-weight:700">' + v.deadlineText + '</span>' +
          '<span style="font-size:9.5pt">　まで（これ以降のご注文は休業明けの納期となります）</span></div></div>';
@@ -959,6 +979,9 @@ function sheetHTML(v) {
          '<div style="font-size:10.5pt;font-weight:700;letter-spacing:.08em">' + esc(v.calTitle) + '</div>' +
          '<div style="font-size:9pt;color:#6f6b63">' + esc(v.cal.rangeLabel) + '</div></div>';
     h += '<div style="margin-top:1mm;font-size:9pt;color:#4a4a46">' + esc(v.calHint) + '</div>';
+    if (v.calInteractionHint) {
+      h += '<div data-noprint style="margin-top:0.6mm;font-size:8.5pt;color:#8a857b">' + esc(v.calInteractionHint) + '</div>';
+    }
     h += '<div style="margin-top:' + v.calGridTop + '">' + calendarHTML(v.cal) + '</div>';
     h += '<div style="margin-top:2.8mm;display:flex;flex-wrap:wrap;gap:2mm 6mm;font-size:9pt">';
     h += v.legend.map(function (l) {
@@ -1011,6 +1034,8 @@ function syncPanel(v) {
   $("btnIssuedKichi").classList.toggle("on", !!state.issuedKichi);
   $("deadlineFld").hidden = v.care;
   $("btnDeadlineReset").hidden = !state.deadlineOverride;
+  $("fShowDeadline").checked = !!state.showDeadline;
+  $("deadlineDateWrap").hidden = !state.showDeadline;
 }
 
 function renderHistory() {
@@ -1045,6 +1070,7 @@ function renderHistory() {
       state.issuedKichi = !!entry.issuedKichi;
       state.dayOverride = (entry.dayOverride && typeof entry.dayOverride === "object") ? entry.dayOverride : {};
       state.deadlineOverride = entry.deadlineOverride || null;
+      state.showDeadline = entry.showDeadline === undefined ? true : !!entry.showDeadline;
       state.fontCss = entry.fontCss || state.fontCss;
       render();
     };
@@ -1074,7 +1100,7 @@ function fit() {
   var el = sheetEl.querySelector(".page");
   if (!el) return;
   var sig = [state.officeIdx, state.kind, state.audience, state.start, state.end,
-             state.note, state.fontCss, state.issued, state.issuedKichi, state.deadlineOverride,
+             state.note, state.fontCss, state.issued, state.issuedKichi, state.deadlineOverride, state.showDeadline,
              JSON.stringify(state.dayOverride)].join("|");
   if (sig !== lastSig) {
     lastSig = sig;
@@ -1137,6 +1163,7 @@ function init() {
   $("fEnd").onchange = function (e) { state.end = e.target.value; state.dayOverride = {}; state.deadlineOverride = null; render(); };
   $("fDeadline").onchange = function (e) { state.deadlineOverride = e.target.value || null; render(); };
   $("btnDeadlineReset").onclick = function () { state.deadlineOverride = null; render(); };
+  $("fShowDeadline").onchange = function (e) { state.showDeadline = e.target.checked; render(); };
   $("fIssued").onchange = function (e) { state.issued = e.target.value; render(); };
   $("btnIssuedKichi").onclick = function () { state.issuedKichi = !state.issuedKichi; render(); };
   $("fNote").oninput = function (e) { state.note = e.target.value; render(); };
@@ -1161,7 +1188,7 @@ function init() {
       start: state.start, end: state.end,
       staff: state.staff, mobile: state.mobile, note: state.note,
       issuedKichi: state.issuedKichi, dayOverride: state.dayOverride,
-      deadlineOverride: state.deadlineOverride,
+      deadlineOverride: state.deadlineOverride, showDeadline: state.showDeadline,
       fontCss: state.fontCss, savedAt: Date.now()
     };
     writeHistory([entry].concat(state.history).slice(0, 30));
@@ -1183,7 +1210,7 @@ function init() {
     render();
   }
   function toggleDeadlineDate(key) {
-    if (state.audience !== "hospital" || !state.start || !state.end) return;
+    if (state.audience !== "hospital" || !state.showDeadline || !state.start || !state.end) return;
     state.deadlineOverride = (state.deadlineOverride === key) ? null : key;
     render();
   }
