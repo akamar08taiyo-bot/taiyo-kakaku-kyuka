@@ -52,6 +52,13 @@
   .calcell{cursor:pointer}
   .calcell:hover{outline:1.6px solid #2f80b8;outline-offset:-1.6px}
   @media print{ .calcell:hover{outline:none} }
+  /* 狭い画面では入力欄（幅400px固定）とA4プレビューを横に並べると、入力欄が画面からはみ出し、
+     プレビューは数十pxの隙間に押し込まれて見えなくなる。縦に積み、プレビューは枠内で横スクロールさせる。 */
+  @media screen and (max-width:860px){
+    #kyukaShell{flex-direction:column;overflow:auto}
+    #kyukaShell .panel{width:auto;flex:none;overflow:visible;border-right:none;border-bottom:1px solid #dedbd4}
+    #kyukaShell .sheetwrap{flex:none;justify-content:flex-start;overflow-x:auto;padding:12px}
+  }
   .btn-main{flex:1;padding:13px 0;border:none;border-radius:8px;background:#2f80b8;color:#fff;font-size:15px;font-weight:700;cursor:pointer;box-shadow:0 2px 5px rgba(47,128,184,.35)}
   .btn-main:hover{background:#256a99}
   .btn-sub{padding:11px 14px;border:1px solid #2f80b8;border-radius:7px;background:#fff;color:#2f80b8;font-size:13px;font-weight:700;cursor:pointer}
@@ -1072,7 +1079,11 @@ function renderHistory() {
       if (idx >= 0) {
         state.officeIdx = idx;
         var sharedSel = document.getElementById("sharedOffice");
-        if (sharedSel) sharedSel.value = String(idx);
+        if (sharedSel) {
+          sharedSel.value = String(idx);
+          // 営業所は両モード共通。価格改定側も同じ営業所に揃える（担当者などはこの後で履歴の値に戻す）
+          if (typeof sharedSel.onchange === "function") sharedSel.onchange({ target: sharedSel });
+        }
       }
       state.kind = entry.kind; state.audience = entry.audience;
       state.start = entry.start || ""; state.end = entry.end || "";
@@ -1522,7 +1533,7 @@ function setOfficeIndex(idx) {
   save(); render();
 }
 
-return { init: init, setOfficeIndex: setOfficeIndex };
+return { init: init, setOfficeIndex: setOfficeIndex, officeIndex: function () { return state.i; } };
 
 })(OFFICES);
 
@@ -1555,6 +1566,14 @@ document.getElementById("modePriceBtn").onclick = function () { setMode("price")
 
 KyukaApp.init();
 PriceApp.init();
+// 価格改定側に保存されている営業所を、選択欄と休暇案内にも反映する（再読み込み後に食い違わないように）
+(function () {
+  var idx = PriceApp.officeIndex();
+  if (idx > 0 && OFFICES[idx]) {
+    sharedOfficeSel.value = String(idx);
+    KyukaApp.setOfficeIndex(idx);
+  }
+})();
 
 var initialMode = "kyuka";
 try { initialMode = localStorage.getItem(MODE_KEY) || "kyuka"; } catch (e) {}
