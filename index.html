@@ -71,6 +71,15 @@
   .page *{-webkit-print-color-adjust:exact;print-color-adjust:exact;color-adjust:exact}
   .page>*{flex:0 0 auto}
 
+  /* スマホ・タブレットでは入力欄(400px)と用紙(A4)が横に並びきらず、
+     画面全体が横にずれてボタンが押せなくなる。縦に積んで、
+     用紙は用紙の枠の中だけで横スクロールさせる。 */
+  @media (max-width:860px){
+    #kyukaShell{flex-direction:column}
+    #kyukaShell .panel{width:100%;flex:none;border-right:0;border-bottom:1px solid #dedbd4}
+    .sheetwrap{padding:12px;justify-content:flex-start;overscroll-behavior-x:contain}
+  }
+
   /* ============================================================
      価格改定案内モード（taiyo-kakaku-kaitei 由来）
      ============================================================ */
