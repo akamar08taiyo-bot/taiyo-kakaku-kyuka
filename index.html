@@ -1515,7 +1515,8 @@ function exportPdf() {
     margin: 0,
     filename: "価格改定のご案内_" + office().name + ".pdf",
     image: { type: "jpeg", quality: 0.98 },
-    html2canvas: { scale: 3, useCORS: true, backgroundColor: "#ffffff" },
+    // A4高さ(1122.5px)がキャプチャ時に1123pxへ切り上がり、空白の2ページ目ができていたため、切り捨てた高さで写す
+    html2canvas: { scale: 3, useCORS: true, backgroundColor: "#ffffff", height: Math.floor(node.getBoundingClientRect().height) },
     jsPDF: { unit: "mm", format: "a4", orientation: "portrait" }
   }).from(node).save()
     .then(done).catch(done);
