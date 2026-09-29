@@ -52,6 +52,13 @@
   .calcell{cursor:pointer}
   .calcell:hover{outline:1.6px solid #2f80b8;outline-offset:-1.6px}
   @media print{ .calcell:hover{outline:none} }
+  /* 狭い画面では入力欄（幅400px固定）とA4プレビューを横に並べると、入力欄が画面からはみ出し、
+     プレビューは数十pxの隙間に押し込まれて見えなくなる。縦に積み、プレビューは枠内で横スクロールさせる。 */
+  @media screen and (max-width:860px){
+    #kyukaShell{flex-direction:column;overflow:auto}
+    #kyukaShell .panel{width:auto;flex:none;overflow:visible;border-right:none;border-bottom:1px solid #dedbd4}
+    #kyukaShell .sheetwrap{flex:none;justify-content:flex-start;overflow-x:auto;padding:12px}
+  }
   .btn-main{flex:1;padding:13px 0;border:none;border-radius:8px;background:#2f80b8;color:#fff;font-size:15px;font-weight:700;cursor:pointer;box-shadow:0 2px 5px rgba(47,128,184,.35)}
   .btn-main:hover{background:#256a99}
   .btn-sub{padding:11px 14px;border:1px solid #2f80b8;border-radius:7px;background:#fff;color:#2f80b8;font-size:13px;font-weight:700;cursor:pointer}
@@ -897,8 +904,8 @@ function compute() {
   var bodyHosp = showDeadline
     ? greet + "平素は格別のお引き立てを賜り、厚く御礼申し上げます。さて、弊社では、" +
       "下記の期間を" + kind.body + "休業とさせていただきます。休業前のお届けをご希望の場合は、" + (deadline ? fmtShort(deadline) : "休業前") +
-      "（休暇前最終発注日）までにご発注をお願いいたします。" + (deadline ? fmtShort(deadline) : "上記の日") +
-      "以降のご注文につきましては、休業明けの納期となりますので、あらかじめご了承ください。"
+      /* 「◯日までに」と「◯日以降」だと当日が両方に含まれてしまうため、後半は「これより後」とする */
+      "（休暇前最終発注日）までにご発注をお願いいたします。これより後のご注文につきましては、休業明けの納期となりますので、あらかじめご了承ください。"
     : greet + "平素は格別のお引き立てを賜り、厚く御礼申し上げます。さて、弊社では、" +
       "下記の期間を" + kind.body + "休業とさせていただきます。休業期間中はご不便をおかけいたしますが、何卒ご了承のほどお願い申し上げます。";
 
@@ -984,7 +991,7 @@ function sheetHTML(v) {
   if (v.showDeadline) {
     h += '<div style="display:flex;gap:6mm;align-items:baseline;color:#a12b2b"><div style="width:34mm;flex:none;font-weight:600;letter-spacing:.12em">休暇前最終発注日</div>' +
          '<div><span style="font-size:11pt;font-weight:700">' + v.deadlineText + '</span>' +
-         '<span style="font-size:9.5pt">　まで（これ以降のご注文は休業明けの納期となります）</span></div></div>';
+         '<span style="font-size:9.5pt">　まで（これより後のご注文は休業明けの納期となります）</span></div></div>';
   }
   h += '</div>';
 
@@ -1081,7 +1088,11 @@ function renderHistory() {
       if (idx >= 0) {
         state.officeIdx = idx;
         var sharedSel = document.getElementById("sharedOffice");
-        if (sharedSel) sharedSel.value = String(idx);
+        if (sharedSel) {
+          sharedSel.value = String(idx);
+          // 営業所は両モード共通。価格改定側も同じ営業所に揃える（担当者などはこの後で履歴の値に戻す）
+          if (typeof sharedSel.onchange === "function") sharedSel.onchange({ target: sharedSel });
+        }
       }
       state.kind = entry.kind; state.audience = entry.audience;
       state.start = entry.start || ""; state.end = entry.end || "";
@@ -1513,7 +1524,8 @@ function exportPdf() {
     margin: 0,
     filename: "価格改定のご案内_" + office().name + ".pdf",
     image: { type: "jpeg", quality: 0.98 },
-    html2canvas: { scale: 3, useCORS: true, backgroundColor: "#ffffff" },
+    // A4高さ(1122.5px)がキャプチャ時に1123pxへ切り上がり、空白の2ページ目ができていたため、切り捨てた高さで写す
+    html2canvas: { scale: 3, useCORS: true, backgroundColor: "#ffffff", height: Math.floor(node.getBoundingClientRect().height) },
     jsPDF: { unit: "mm", format: "a4", orientation: "portrait" }
   }).from(node).save()
     .then(done).catch(done);
@@ -1531,7 +1543,7 @@ function setOfficeIndex(idx) {
   save(); render();
 }
 
-return { init: init, setOfficeIndex: setOfficeIndex };
+return { init: init, setOfficeIndex: setOfficeIndex, officeIndex: function () { return state.i; } };
 
 })(OFFICES);
 
@@ -1564,6 +1576,14 @@ document.getElementById("modePriceBtn").onclick = function () { setMode("price")
 
 KyukaApp.init();
 PriceApp.init();
+// 価格改定側に保存されている営業所を、選択欄と休暇案内にも反映する（再読み込み後に食い違わないように）
+(function () {
+  var idx = PriceApp.officeIndex();
+  if (idx > 0 && OFFICES[idx]) {
+    sharedOfficeSel.value = String(idx);
+    KyukaApp.setOfficeIndex(idx);
+  }
+})();
 
 var initialMode = "kyuka";
 try { initialMode = localStorage.getItem(MODE_KEY) || "kyuka"; } catch (e) {}
