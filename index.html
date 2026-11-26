@@ -1577,15 +1577,15 @@ document.getElementById("modePriceBtn").onclick = function () { setMode("price")
 KyukaApp.init();
 PriceApp.init();
 
-// 保存した営業所を両モードと選択欄へ同時に復元する。初回はポータル、次に従来の価格改定の設定を引き継ぐ。
+// ポータルで選んだ営業所を両モードの初期値にする。ポータルの選択がなければアプリ内の保存値を使う。
 var initialOfficeName = null, portalOfficeName = null;
 try { initialOfficeName = localStorage.getItem(OFFICE_KEY); } catch (e) {}
 try {
   var portalSession = JSON.parse(localStorage.getItem("taiyo_portal_session") || "null");
   portalOfficeName = portalSession && portalSession.office;
 } catch (e) {}
-var initialOfficeIdx = OFFICES.findIndex(function (o) { return o.name === initialOfficeName; });
-if (initialOfficeIdx < 0) initialOfficeIdx = OFFICES.findIndex(function (o) { return o.name === portalOfficeName; });
+var initialOfficeIdx = OFFICES.findIndex(function (o) { return o.name === portalOfficeName; });
+if (initialOfficeIdx < 0) initialOfficeIdx = OFFICES.findIndex(function (o) { return o.name === initialOfficeName; });
 if (initialOfficeIdx < 0) initialOfficeIdx = PriceApp.getOfficeIndex();
 selectOffice(initialOfficeIdx);
 
