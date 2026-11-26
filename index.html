@@ -208,7 +208,7 @@
     <div class="tn-title">価格改定・休暇案内 作成ツール</div>
   </div>
   <div class="tn-office">
-    <label for="sharedOffice">営業所</label>
+    <label for="sharedOffice">発行元の営業所</label>
     <select id="sharedOffice"></select>
   </div>
   <div class="tn-modes">
@@ -1087,9 +1087,7 @@ function renderHistory() {
     load.onclick = function () {
       var idx = OFFICES.findIndex(function (o) { return o.name === entry.officeName; });
       if (idx >= 0) {
-        state.officeIdx = idx;
-        var sharedSel = document.getElementById("sharedOffice");
-        if (sharedSel) sharedSel.value = String(idx);
+        selectOffice(idx);
       }
       state.kind = entry.kind; state.audience = entry.audience;
       state.start = entry.start || ""; state.end = entry.end || "";
@@ -1539,7 +1537,7 @@ function setOfficeIndex(idx) {
   save(); render();
 }
 
-return { init: init, setOfficeIndex: setOfficeIndex };
+return { init: init, setOfficeIndex: setOfficeIndex, getOfficeIndex: function () { return state.i; } };
 
 })(OFFICES);
 
@@ -1547,15 +1545,21 @@ return { init: init, setOfficeIndex: setOfficeIndex };
    共通コーディネーター（営業所選択・モード切替）
    ============================================================ */
 var sharedOfficeSel = document.getElementById("sharedOffice");
+var OFFICE_KEY = "taiyo-annai-office-v1";
 OFFICES.forEach(function (o, i) {
   var opt = document.createElement("option");
   opt.value = String(i); opt.textContent = o.name;
   sharedOfficeSel.appendChild(opt);
 });
-sharedOfficeSel.onchange = function (e) {
-  var idx = Number(e.target.value) || 0;
+function selectOffice(idx) {
+  if (!Number.isInteger(idx) || !OFFICES[idx]) return;
+  sharedOfficeSel.value = String(idx);
   KyukaApp.setOfficeIndex(idx);
   PriceApp.setOfficeIndex(idx);
+  try { localStorage.setItem(OFFICE_KEY, OFFICES[idx].name); } catch (e) {}
+}
+sharedOfficeSel.onchange = function (e) {
+  selectOffice(Number(e.target.value));
 };
 
 var MODE_KEY = "taiyo-annai-mode-v1";
@@ -1572,6 +1576,18 @@ document.getElementById("modePriceBtn").onclick = function () { setMode("price")
 
 KyukaApp.init();
 PriceApp.init();
+
+// 保存した営業所を両モードと選択欄へ同時に復元する。初回はポータル、次に従来の価格改定の設定を引き継ぐ。
+var initialOfficeName = null, portalOfficeName = null;
+try { initialOfficeName = localStorage.getItem(OFFICE_KEY); } catch (e) {}
+try {
+  var portalSession = JSON.parse(localStorage.getItem("taiyo_portal_session") || "null");
+  portalOfficeName = portalSession && portalSession.office;
+} catch (e) {}
+var initialOfficeIdx = OFFICES.findIndex(function (o) { return o.name === initialOfficeName; });
+if (initialOfficeIdx < 0) initialOfficeIdx = OFFICES.findIndex(function (o) { return o.name === portalOfficeName; });
+if (initialOfficeIdx < 0) initialOfficeIdx = PriceApp.getOfficeIndex();
+selectOffice(initialOfficeIdx);
 
 var initialMode = "kyuka";
 try { initialMode = localStorage.getItem(MODE_KEY) || "kyuka"; } catch (e) {}
